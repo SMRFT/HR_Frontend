@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import axios from 'axios';
 import styled, { keyframes, createGlobalStyle } from 'styled-components';
-
+import FingerprintJS from '@fingerprintjs/fingerprintjs';
 // Global palette and dark gradient background
 const GlobalStyle = createGlobalStyle`
   :root {
@@ -349,9 +349,10 @@ const Message = styled.div`
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
-    role: '',
     password: '',
     confirmPassword: '',
+    fingerprint_id: '',
+    device: '',
   });
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -359,8 +360,20 @@ const Register = () => {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Default role is always "HR"
+  // const [role, setRole] = useState('HR');
+
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
 
+  // On mount, get fingerprint
+  useEffect(() => {
+    const getFingerprint = async () => {
+      const fp = await FingerprintJS.load();
+      const result = await fp.get();
+      setFormData(prev => ({ ...prev, fingerprint_id: result.visitorId }));
+    };
+    getFingerprint();
+  }, []);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -388,9 +401,11 @@ const Register = () => {
     try {
       const requestData = {
         name: formData.name,
-        role: formData.role,
+        role: "HR", // Default
         password: formData.password,
         confirmPassword: formData.confirmPassword,
+        fingerprint_id: formData.fingerprint_id,
+        device: formData.device,
       };
       await axios.post(
         `${HRbaseurl}hrregistration/`,
@@ -398,7 +413,7 @@ const Register = () => {
       );
       setMessage('Registration successful!');
       setSuccess(true);
-      setFormData({ name: '', role: '', password: '', confirmPassword: '' });
+      setFormData({ name: '', password: '', confirmPassword: '', fingerprint_id: formData.fingerprint_id, device: '' });
     } catch (error) {
       setMessage(
         error?.response?.data?.error || 'Registration failed. Please try again.'
@@ -411,129 +426,148 @@ const Register = () => {
 
   return (
     <>
-      <GlobalStyle />
-      <PageContainer>
-        <Blob
-          size={420}
-          blur={80}
-          opacity={0.35}
-          top="5%"
-          left="65%"
-          bg="linear-gradient(135deg,#7c5cff,#22d3ee)"
-          speed={16}
-        />
-        <Blob
-          size={360}
-          blur={70}
-          opacity={0.30}
-          top="75%"
-          left="5%"
-          bg="linear-gradient(135deg,#f472b6,#7c5cff)"
-          speed={18}
-        />
-        <Card>
-          <ImageSection>
-            <ContentOverlay>
-              <ImageTitle>Join Our Platform</ImageTitle>
-              <ImageSubtitle>
-                Create your account and unlock access to powerful tools and features
-              </ImageSubtitle>
-            </ContentOverlay>
-          </ImageSection>
+    <GlobalStyle />
+    <PageContainer>
+      {/* <-- Place your Blob, Card, ImageSection etc styled-components here just like your original design --> */}
+      <Blob
+        size={420}
+        blur={80}
+        opacity={0.35}
+        top="5%"
+        left="65%"
+        bg="linear-gradient(135deg,#7c5cff,#22d3ee)"
+        speed={16}
+      />
+      <Blob
+        size={360}
+        blur={70}
+        opacity={0.30}
+        top="75%"
+        left="5%"
+        bg="linear-gradient(135deg,#f472b6,#7c5cff)"
+        speed={18}
+      />
+      <Card>
+        <ImageSection>
+          <ContentOverlay>
+            <ImageTitle>Join Our Platform</ImageTitle>
+            <ImageSubtitle>
+              Create your account and unlock access to powerful tools and features
+            </ImageSubtitle>
+          </ContentOverlay>
+        </ImageSection>
+        <FormSection>
+          <FormHeader>
+            <Title>Create an Account</Title>
+            <Subtitle>
+              Please fill in the form to register
+            </Subtitle>
+          </FormHeader>
+          <Form onSubmit={handleSubmit}>
+            <FormGrid>
+              <FormGroup>
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  name="name"
+                  placeholder="Enter your full name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </FormGroup>
 
-          <FormSection>
-            <FormHeader>
-              <Title>Create an Account</Title>
-              <Subtitle>Please fill in the form to register</Subtitle>
-            </FormHeader>
+              <FormGroup>
+                <Label htmlFor="role">Role (fixed)</Label>
+                <Input
+                  disabled
+                  value="HR"
+                  name="role"
+                  style={{ background: "#22223b", color: "#fff", fontWeight: 600 }}
+                  readOnly
+                />
+              </FormGroup>
 
-            <Form onSubmit={handleSubmit}>
-              <FormGrid>
-                <FormGroup>
-                  <Label htmlFor="name">Full Name</Label>
+              <FormGroup>
+                <Label htmlFor="device">Device Name</Label>
+                <Input
+                  id="device"
+                  type="text"
+                  name="device"
+                  placeholder="Eg: John’s Office PC"
+                  value={formData.device}
+                  onChange={handleChange}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Device Fingerprint ID</Label>
+                <Input
+                  name="fingerprint_id"
+                  value={formData.fingerprint_id}
+                  readOnly
+                  style={{ background: "#f1f5f9", color: "#0f172a", fontFamily: "monospace" }}
+                />
+              </FormGroup>
+
+              <FormGroup>
+                <Label htmlFor="password">Password</Label>
+                <InputWrap>
                   <Input
-                    id="name"
-                    type="text"
-                    name="name"
-                    placeholder="Enter your full name"
-                    value={formData.name}
+                    id="password"
+                    type={showPass ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Create a password"
+                    value={formData.password}
                     onChange={handleChange}
                     required
                   />
-                </FormGroup>
+                  <ToggleBtn
+                    type="button"
+                    onClick={() => setShowPass((s) => !s)}
+                  >
+                    {showPass ? 'Hide' : 'Show'}
+                  </ToggleBtn>
+                </InputWrap>
+                <Meter width={strength.score} bg={strength.bg}>
+                  <span />
+                </Meter>
+              </FormGroup>
 
-                <FormGroup>
-                  <Label htmlFor="role">Select Role</Label>
-                  <Select
-                    id="role"
-                    name="role"
-                    value={formData.role}
+              <FormGroup>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <InputWrap>
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirm ? 'text' : 'password'}
+                    name="confirmPassword"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
                     onChange={handleChange}
                     required
+                  />
+                  <ToggleBtn
+                    type="button"
+                    onClick={() => setShowConfirm((s) => !s)}
                   >
-                    <option value="">Select a role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Company">Company</option>
-                  </Select>
-                </FormGroup>
+                    {showConfirm ? 'Hide' : 'Show'}
+                  </ToggleBtn>
+                </InputWrap>
+              </FormGroup>
+            </FormGrid>
 
-                <FormGroup>
-                  <Label htmlFor="password">Password</Label>
-                  <InputWrap>
-                    <Input
-                      id="password"
-                      type={showPass ? 'text' : 'password'}
-                      name="password"
-                      placeholder="Create a password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                    />
-                    <ToggleBtn
-                      type="button"
-                      onClick={() => setShowPass((s) => !s)}
-                    >
-                      {showPass ? 'Hide' : 'Show'}
-                    </ToggleBtn>
-                  </InputWrap>
-                  <Meter width={strength.score} bg={strength.bg}>
-                    <span />
-                  </Meter>
-                </FormGroup>
-
-                <FormGroup>
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <InputWrap>
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirm ? 'text' : 'password'}
-                      name="confirmPassword"
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                    />
-                    <ToggleBtn
-                      type="button"
-                      onClick={() => setShowConfirm((s) => !s)}
-                    >
-                      {showConfirm ? 'Hide' : 'Show'}
-                    </ToggleBtn>
-                  </InputWrap>
-                </FormGroup>
-              </FormGrid>
-
-              <SubmitButton type="submit" disabled={loading}>
-                {loading ? 'Creating...' : 'Create Account'}
-              </SubmitButton>
-            </Form>
-
-            <Message visible={message !== ''} success={success}>
-              {message}
-            </Message>
-          </FormSection>
-        </Card>
-      </PageContainer>
+            <SubmitButton type="submit" disabled={loading}>
+              {loading ? 'Creating...' : 'Create Account'}
+            </SubmitButton>
+          </Form>
+          <Message visible={message !== ''} success={success}>
+            {message}
+          </Message>
+        </FormSection>
+      </Card>
+    </PageContainer>
     </>
   );
 };
