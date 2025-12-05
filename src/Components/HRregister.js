@@ -1,7 +1,9 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import styled, { keyframes, createGlobalStyle } from 'styled-components';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import illustration from '../assets/hr_platform_illustration.png';
+
 // Global palette and dark gradient background
 const GlobalStyle = createGlobalStyle`
   :root {
@@ -148,6 +150,15 @@ const ImageSubtitle = styled.p`
   max-width: 420px;
   text-shadow: 0 2px 6px rgba(0,0,0,0.4);
   color: var(--muted);
+`;
+
+const Illustration = styled.img`
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin-bottom: 2rem;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+  animation: ${float} 6s ease-in-out infinite;
 `;
 
 // Form section
@@ -426,148 +437,149 @@ const Register = () => {
 
   return (
     <>
-    <GlobalStyle />
-    <PageContainer>
-      {/* <-- Place your Blob, Card, ImageSection etc styled-components here just like your original design --> */}
-      <Blob
-        size={420}
-        blur={80}
-        opacity={0.35}
-        top="5%"
-        left="65%"
-        bg="linear-gradient(135deg,#7c5cff,#22d3ee)"
-        speed={16}
-      />
-      <Blob
-        size={360}
-        blur={70}
-        opacity={0.30}
-        top="75%"
-        left="5%"
-        bg="linear-gradient(135deg,#f472b6,#7c5cff)"
-        speed={18}
-      />
-      <Card>
-        <ImageSection>
-          <ContentOverlay>
-            <ImageTitle>Join Our Platform</ImageTitle>
-            <ImageSubtitle>
-              Create your account and unlock access to powerful tools and features
-            </ImageSubtitle>
-          </ContentOverlay>
-        </ImageSection>
-        <FormSection>
-          <FormHeader>
-            <Title>Create an Account</Title>
-            <Subtitle>
-              Please fill in the form to register
-            </Subtitle>
-          </FormHeader>
-          <Form onSubmit={handleSubmit}>
-            <FormGrid>
-              <FormGroup>
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  name="name"
-                  placeholder="Enter your full name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="role">Role (fixed)</Label>
-                <Input
-                  disabled
-                  value="HR"
-                  name="role"
-                  style={{ background: "#22223b", color: "#fff", fontWeight: 600 }}
-                  readOnly
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="device">Device Name</Label>
-                <Input
-                  id="device"
-                  type="text"
-                  name="device"
-                  placeholder="Eg: John’s Office PC"
-                  value={formData.device}
-                  onChange={handleChange}
-                  required
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <Label>Device Fingerprint ID</Label>
-                <Input
-                  name="fingerprint_id"
-                  value={formData.fingerprint_id}
-                  readOnly
-                  style={{ background: "#f1f5f9", color: "#0f172a", fontFamily: "monospace" }}
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="password">Password</Label>
-                <InputWrap>
+      <GlobalStyle />
+      <PageContainer>
+        {/* <-- Place your Blob, Card, ImageSection etc styled-components here just like your original design --> */}
+        <Blob
+          size={420}
+          blur={80}
+          opacity={0.35}
+          top="5%"
+          left="65%"
+          bg="linear-gradient(135deg,#7c5cff,#22d3ee)"
+          speed={16}
+        />
+        <Blob
+          size={360}
+          blur={70}
+          opacity={0.30}
+          top="75%"
+          left="5%"
+          bg="linear-gradient(135deg,#f472b6,#7c5cff)"
+          speed={18}
+        />
+        <Card>
+          <ImageSection>
+            <ContentOverlay>
+              <Illustration src={illustration} alt="Platform Illustration" />
+              <ImageTitle>Join Our Platform</ImageTitle>
+              <ImageSubtitle>
+                Create your account and unlock access to powerful tools and features
+              </ImageSubtitle>
+            </ContentOverlay>
+          </ImageSection>
+          <FormSection>
+            <FormHeader>
+              <Title>Device Registration</Title>
+              <Subtitle>
+                Please fill in the form to register
+              </Subtitle>
+            </FormHeader>
+            <Form onSubmit={handleSubmit}>
+              <FormGrid>
+                <FormGroup>
+                  <Label htmlFor="name">Full Name</Label>
                   <Input
-                    id="password"
-                    type={showPass ? 'text' : 'password'}
-                    name="password"
-                    placeholder="Create a password"
-                    value={formData.password}
+                    id="name"
+                    type="text"
+                    name="name"
+                    placeholder="Enter your full name"
+                    value={formData.name}
                     onChange={handleChange}
                     required
                   />
-                  <ToggleBtn
-                    type="button"
-                    onClick={() => setShowPass((s) => !s)}
-                  >
-                    {showPass ? 'Hide' : 'Show'}
-                  </ToggleBtn>
-                </InputWrap>
-                <Meter width={strength.score} bg={strength.bg}>
-                  <span />
-                </Meter>
-              </FormGroup>
+                </FormGroup>
 
-              <FormGroup>
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <InputWrap>
+                <FormGroup>
+                  <Label htmlFor="role">Role (fixed)</Label>
                   <Input
-                    id="confirmPassword"
-                    type={showConfirm ? 'text' : 'password'}
-                    name="confirmPassword"
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
+                    disabled
+                    value="HR"
+                    name="role"
+                    style={{ background: "#22223b", color: "#fff", fontWeight: 600 }}
+                    readOnly
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="device">Device Name</Label>
+                  <Input
+                    id="device"
+                    type="text"
+                    name="device"
+                    placeholder="Eg: HR Office PC"
+                    value={formData.device}
                     onChange={handleChange}
                     required
                   />
-                  <ToggleBtn
-                    type="button"
-                    onClick={() => setShowConfirm((s) => !s)}
-                  >
-                    {showConfirm ? 'Hide' : 'Show'}
-                  </ToggleBtn>
-                </InputWrap>
-              </FormGroup>
-            </FormGrid>
+                </FormGroup>
 
-            <SubmitButton type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Account'}
-            </SubmitButton>
-          </Form>
-          <Message visible={message !== ''} success={success}>
-            {message}
-          </Message>
-        </FormSection>
-      </Card>
-    </PageContainer>
+                <FormGroup>
+                  <Label>Device Fingerprint ID</Label>
+                  <Input
+                    name="fingerprint_id"
+                    value={formData.fingerprint_id}
+                    readOnly
+                    style={{ background: "#f1f5f9", color: "#0f172a", fontFamily: "monospace" }}
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="password">Password</Label>
+                  <InputWrap>
+                    <Input
+                      id="password"
+                      type={showPass ? 'text' : 'password'}
+                      name="password"
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                    />
+                    <ToggleBtn
+                      type="button"
+                      onClick={() => setShowPass((s) => !s)}
+                    >
+                      {showPass ? 'Hide' : 'Show'}
+                    </ToggleBtn>
+                  </InputWrap>
+                  <Meter width={strength.score} bg={strength.bg}>
+                    <span />
+                  </Meter>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <InputWrap>
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirm ? 'text' : 'password'}
+                      name="confirmPassword"
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      required
+                    />
+                    <ToggleBtn
+                      type="button"
+                      onClick={() => setShowConfirm((s) => !s)}
+                    >
+                      {showConfirm ? 'Hide' : 'Show'}
+                    </ToggleBtn>
+                  </InputWrap>
+                </FormGroup>
+              </FormGrid>
+
+              <SubmitButton type="submit" disabled={loading}>
+                {loading ? 'Creating...' : 'Create Account'}
+              </SubmitButton>
+            </Form>
+            <Message visible={message !== ''} success={success}>
+              {message}
+            </Message>
+          </FormSection>
+        </Card>
+      </PageContainer>
     </>
   );
 };

@@ -35,12 +35,46 @@ const shimmer = keyframes`
   }
 `;
 
+// Global palette
+const GlobalStyle = styled.createGlobalStyle`
+  :root {
+    --bg1: #0f172a;
+    --bg2: #1e293b;
+    --primary: #6366f1;
+    --primary-2: #8b5cf6;
+    --accent: #22d3ee;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --glass: rgba(255,255,255,0.10);
+    --border: rgba(255,255,255,0.28);
+    --shadow: 0 12px 30px rgba(0,0,0,0.30);
+    --radius: 16px;
+    --radius-sm: 12px;
+    --ring: 0 0 0 3px rgba(99,102,241,0.25);
+    --transition: all .2s ease;
+  }
+  * { box-sizing: border-box; }
+  html, body, #root { height: 100%; }
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background:
+      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
+      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+`;
+
 const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 20px;
-  font-family: 'Segoe UI', 'Arial', sans-serif;
-  background: linear-gradient(135deg, #e8f5f3 0%, #d4e9f7 50%, #e1f0e8 100%);
   min-height: 100vh;
 
   @media (max-width: 768px) {
@@ -52,11 +86,12 @@ const Header = styled.div`
   text-align: center;
   margin-bottom: 50px;
   padding: 40px 30px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+  background: var(--glass);
   border-radius: 24px;
-  box-shadow: 0 10px 40px rgba(72, 187, 172, 0.15), 0 2px 8px rgba(66, 153, 225, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(72, 187, 172, 0.1);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border);
 
   @media (max-width: 768px) {
     padding: 30px 20px;
@@ -69,14 +104,10 @@ const Header = styled.div`
 `;
 
 const Title = styled.h1`
-  color: #2c5f5d;
+  color: var(--text);
   font-size: 2.8rem;
   margin-bottom: 15px;
   font-weight: 700;
-  background: linear-gradient(135deg, #48bbac 0%, #4299e1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
   letter-spacing: -0.5px;
 
   @media (max-width: 768px) {
@@ -89,7 +120,7 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-  color: #5a8a87;
+  color: var(--muted);
   font-size: 1.15rem;
   margin: 8px 0;
   font-weight: 500;
@@ -105,14 +136,14 @@ const Subtitle = styled.p`
 
 const Badge = styled.div`
   display: inline-block;
-  background: linear-gradient(135deg, #48bbac 0%, #38a89d 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
   color: white;
   padding: 10px 24px;
   border-radius: 25px;
   font-size: 0.95rem;
   font-weight: 600;
   margin-top: 20px;
-  box-shadow: 0 4px 15px rgba(72, 187, 172, 0.3);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 
   @media (max-width: 480px) {
     font-size: 0.85rem;
@@ -146,18 +177,18 @@ const ImageGalleryGrid = styled.div`
 `;
 
 const ImageCard = styled.div`
-  background: white;
+  background: rgba(255,255,255,0.05);
   border-radius: 20px;
   padding: 15px;
-  box-shadow: 0 8px 25px rgba(72, 187, 172, 0.12);
+  box-shadow: var(--shadow);
   transition: all 0.4s ease;
   cursor: pointer;
-  border: 1px solid rgba(72, 187, 172, 0.1);
+  border: 1px solid var(--border);
 
   &:hover {
     transform: translateY(-8px);
-    box-shadow: 0 15px 45px rgba(72, 187, 172, 0.2), 0 5px 15px rgba(66, 153, 225, 0.15);
-    border-color: rgba(72, 187, 172, 0.3);
+    box-shadow: 0 15px 45px rgba(0,0,0,0.3);
+    border-color: var(--primary);
   }
 
   @media (max-width: 768px) {
@@ -176,7 +207,7 @@ const GalleryImage = styled.img`
 
 const ImageCaption = styled.p`
   text-align: center;
-  color: #48bbac;
+  color: var(--accent);
   font-weight: 600;
   margin-top: 12px;
   font-size: 0.95rem;
@@ -192,7 +223,7 @@ const RegistrationTypeSection = styled.div`
 
 const SectionTitle = styled.h2`
   text-align: center;
-  color: #2c5f5d;
+  color: var(--text);
   font-size: 2rem;
   margin-bottom: 30px;
   font-weight: 700;
@@ -228,26 +259,26 @@ const RegistrationButton = styled.button`
   padding: 22px 40px;
   font-size: 1.2rem;
   font-weight: 600;
-  border: 3px solid transparent;
+  border: 1px solid transparent;
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.4s ease;
-  background: ${props => props.$active 
-    ? 'linear-gradient(135deg, #48bbac 0%, #4299e1 100%)' 
-    : 'white'};
-  color: ${props => props.$active ? 'white' : '#48bbac'};
-  border-color: ${props => props.$active ? 'transparent' : '#48bbac'};
-  box-shadow: ${props => props.$active 
-    ? '0 10px 30px rgba(72, 187, 172, 0.35)' 
-    : '0 4px 15px rgba(72, 187, 172, 0.1)'};
+  background: ${props => props.$active
+    ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%)'
+    : 'rgba(255,255,255,0.05)'};
+  color: ${props => props.$active ? 'white' : 'var(--text)'};
+  border-color: ${props => props.$active ? 'transparent' : 'var(--border)'};
+  box-shadow: ${props => props.$active
+    ? '0 10px 30px rgba(99, 102, 241, 0.35)'
+    : 'var(--shadow)'};
   min-width: 280px;
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 35px rgba(72, 187, 172, 0.4);
-    background: ${props => props.$active 
-      ? 'linear-gradient(135deg, #4299e1 0%, #48bbac 100%)' 
-      : 'linear-gradient(135deg, #48bbac 0%, #4299e1 100%)'};
+    box-shadow: 0 12px 35px rgba(99, 102, 241, 0.4);
+    background: ${props => props.$active
+    ? 'linear-gradient(135deg, var(--primary-2) 0%, var(--primary) 100%)'
+    : 'rgba(255,255,255,0.1)'};
     color: white;
     border-color: transparent;
   }
@@ -270,14 +301,15 @@ const RegistrationButton = styled.button`
 `;
 
 const ContentCard = styled.div`
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
+  background: var(--glass);
   border-radius: 24px;
   padding: 45px;
-  box-shadow: 0 10px 40px rgba(72, 187, 172, 0.15);
+  box-shadow: var(--shadow);
   animation: fadeIn 0.5s ease-in;
-  border: 1px solid rgba(72, 187, 172, 0.15);
+  border: 1px solid var(--border);
   margin-bottom: 30px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 
   @keyframes fadeIn {
     from {
@@ -301,7 +333,7 @@ const ContentCard = styled.div`
 `;
 
 const EventTitle = styled.h3`
-  color: #48bbac;
+  color: var(--accent);
   font-size: 2.2rem;
   margin-bottom: 20px;
   text-align: center;
@@ -335,14 +367,15 @@ const InfoGrid = styled.div`
 
 const InfoItem = styled.div`
   padding: 22px;
-  background: linear-gradient(135deg, #e8f5f3 0%, #d4e9f7 100%);
+  background: rgba(255,255,255,0.05);
   border-radius: 14px;
-  border-left: 4px solid #48bbac;
+  border-left: 4px solid var(--primary);
   transition: all 0.3s ease;
 
   &:hover {
     transform: translateX(5px);
-    box-shadow: 0 4px 15px rgba(72, 187, 172, 0.15);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.08);
   }
 
   @media (max-width: 480px) {
@@ -352,7 +385,7 @@ const InfoItem = styled.div`
 
 const InfoLabel = styled.div`
   font-weight: 600;
-  color: #2c5f5d;
+  color: var(--text);
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -365,7 +398,7 @@ const InfoLabel = styled.div`
 `;
 
 const InfoValue = styled.div`
-  color: #3a7773;
+  color: var(--muted);
   font-size: 1.15rem;
   font-weight: 600;
 
@@ -375,7 +408,7 @@ const InfoValue = styled.div`
 `;
 
 const Description = styled.p`
-  color: #4a6a68;
+  color: var(--text);
   line-height: 1.8;
   margin: 20px 0;
   text-align: center;
@@ -392,13 +425,13 @@ const Description = styled.p`
 `;
 
 const HighlightBox = styled.div`
-  background: linear-gradient(135deg, #48bbac 0%, #4299e1 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
   color: white;
   padding: 22px;
   border-radius: 14px;
   margin: 25px 0;
   text-align: center;
-  box-shadow: 0 6px 20px rgba(72, 187, 172, 0.3);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 
   @media (max-width: 480px) {
     padding: 18px;
@@ -409,10 +442,10 @@ const HighlightBox = styled.div`
 const PaymentSection = styled.div`
   margin-top: 30px;
   padding: 40px;
-  background: white;
+  background: rgba(255,255,255,0.05);
   border-radius: 20px;
-  border: 2px solid #48bbac;
-  box-shadow: 0 8px 25px rgba(72, 187, 172, 0.12);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 
   @media (max-width: 768px) {
     padding: 30px 25px;
@@ -425,7 +458,7 @@ const PaymentSection = styled.div`
 `;
 
 const PaymentTitle = styled.h4`
-  color: #48bbac;
+  color: var(--accent);
   margin-bottom: 20px;
   font-size: 1.6rem;
   text-align: center;
@@ -444,9 +477,9 @@ const AmountDisplay = styled.div`
   text-align: center;
   margin: 25px 0;
   padding: 25px;
-  background: linear-gradient(135deg, #e8f5f3 0%, #d4e9f7 100%);
+  background: rgba(255,255,255,0.05);
   border-radius: 14px;
-  border: 1px solid rgba(72, 187, 172, 0.2);
+  border: 1px solid var(--border);
 
   @media (max-width: 480px) {
     padding: 20px;
@@ -454,7 +487,7 @@ const AmountDisplay = styled.div`
 `;
 
 const AmountLabel = styled.div`
-  color: #5a8a87;
+  color: var(--muted);
   font-size: 1.05rem;
   margin-bottom: 10px;
   font-weight: 500;
@@ -465,7 +498,7 @@ const AmountLabel = styled.div`
 `;
 
 const AmountValue = styled.div`
-  color: #2c5f5d;
+  color: var(--text);
   font-size: 2.8rem;
   font-weight: 700;
 
@@ -716,10 +749,10 @@ const SuccessMessage = styled.p`
 const FormSection = styled.div`
   margin-top: 30px;
   padding: 30px;
-  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  background: rgba(255,255,255,0.05);
   border-radius: 14px;
   text-align: center;
-  border: 1px solid rgba(72, 187, 172, 0.15);
+  border: 1px solid var(--border);
 
   @media (max-width: 480px) {
     padding: 25px 20px;
@@ -727,7 +760,7 @@ const FormSection = styled.div`
 `;
 
 const FormDescription = styled.p`
-  color: #4a6a68;
+  color: var(--muted);
   line-height: 1.8;
   margin-bottom: 20px;
   font-size: 1.05rem;
@@ -744,314 +777,318 @@ const FormDescription = styled.p`
 
 // Custom hook for loading Razorpay payment button
 const useRazorpayButton = (paymentButtonId, shouldLoad) => {
- useEffect(() => {
- if (!shouldLoad || !paymentButtonId) return;
+  useEffect(() => {
+    if (!shouldLoad || !paymentButtonId) return;
 
- const formId = `rzp_payment_form_${paymentButtonId}`;
- const form = document.getElementById(formId);
+    const formId = `rzp_payment_form_${paymentButtonId}`;
+    const form = document.getElementById(formId);
 
- if (form && !form.hasChildNodes()) {
- const script = document.createElement('script');
- script.src = 'https://checkout.razorpay.com/v1/payment-button.js';
- script.async = true;
- script.setAttribute('data-payment_button_id', paymentButtonId);
- form.appendChild(script);
- }
+    if (form && !form.hasChildNodes()) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/payment-button.js';
+      script.async = true;
+      script.setAttribute('data-payment_button_id', paymentButtonId);
+      form.appendChild(script);
+    }
 
- // Cleanup function
- return () => {
- if (form) {
- while (form.firstChild) {
- form.removeChild(form.firstChild);
- }
- }
- };
- }, [paymentButtonId, shouldLoad]);
+    // Cleanup function
+    return () => {
+      if (form) {
+        while (form.firstChild) {
+          form.removeChild(form.firstChild);
+        }
+      }
+    };
+  }, [paymentButtonId, shouldLoad]);
 };
 
 const ShanconRegistration = () => {
- const [selectedType, setSelectedType] = useState(null);
- const [paymentCompleted, setPaymentCompleted] = useState(false);
 
- // Payment button IDs for each registration type
- const PAYMENT_BUTTONS = {
- conference: 'pl_RUOaY53qreOwSR', // ₹200
- workshop: 'pl_RUOc7Ry8IKxyPi' // ₹1000
- };
+  const [selectedType, setSelectedType] = useState(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
- // Google Form links for registration
- const REGISTRATION_FORMS = {
- conference: 'https://docs.google.com/forms/d/e/1FAIpQLSc2FfI9T6QcgPgUUs_K9fW-awBy870PHzkh2v9_m1ejChuqzA/viewform?usp=sharing&ouid=106200274007764411374', // Add conference form link
- workshop: 'https://docs.google.com/forms/d/e/1FAIpQLSc2FfI9T6QcgPgUUs_K9fW-awBy870PHzkh2v9_m1ejChuqzA/viewform?usp=sharing&ouid=106200274007764411374'
- };
+  // Payment button IDs for each registration type
+  const PAYMENT_BUTTONS = {
+    conference: 'pl_RUOaY53qreOwSR', // ₹200
+    workshop: 'pl_RUOc7Ry8IKxyPi' // ₹1000
+  };
 
- // Event promotional images
- const eventImages = [
- {
- src: shancon1,
- alt: 'SHANCON 3.0 - Main Conference',
- caption: 'Main Conference'
- },
- {
- src: shancon2,
- alt: 'Program Schedule',
- caption: 'Program Schedule'
- },
- {
- src: shancon3,
- alt: 'Pre-Conference Workshop',
- caption: 'Robotic Surgery Workshop'
- },
- {
- src: shancon4,
- alt: 'Conference Details',
- caption: 'Event Details'
- }
- ];
+  // Google Form links for registration
+  const REGISTRATION_FORMS = {
+    conference: 'https://docs.google.com/forms/d/e/1FAIpQLSc2FfI9T6QcgPgUUs_K9fW-awBy870PHzkh2v9_m1ejChuqzA/viewform?usp=sharing&ouid=106200274007764411374', // Add conference form link
+    workshop: 'https://docs.google.com/forms/d/e/1FAIpQLSc2FfI9T6QcgPgUUs_K9fW-awBy870PHzkh2v9_m1ejChuqzA/viewform?usp=sharing&ouid=106200274007764411374'
+  };
 
- const currentPaymentButtonId = selectedType ? PAYMENT_BUTTONS[selectedType] : null;
- 
- // Load the appropriate Razorpay button when type is selected and payment not completed
- useRazorpayButton(currentPaymentButtonId, selectedType !== null && !paymentCompleted);
+  // Event promotional images
+  const eventImages = [
+    {
+      src: shancon1,
+      alt: 'SHANCON 3.0 - Main Conference',
+      caption: 'Main Conference'
+    },
+    {
+      src: shancon2,
+      alt: 'Program Schedule',
+      caption: 'Program Schedule'
+    },
+    {
+      src: shancon3,
+      alt: 'Pre-Conference Workshop',
+      caption: 'Robotic Surgery Workshop'
+    },
+    {
+      src: shancon4,
+      alt: 'Conference Details',
+      caption: 'Event Details'
+    }
+  ];
 
- const getAmount = () => {
- return selectedType === 'conference' ? '200' : '1000';
- };
+  const currentPaymentButtonId = selectedType ? PAYMENT_BUTTONS[selectedType] : null;
 
- const handlePaymentComplete = () => {
- setPaymentCompleted(true);
- };
+  // Load the appropriate Razorpay button when type is selected and payment not completed
+  useRazorpayButton(currentPaymentButtonId, selectedType !== null && !paymentCompleted);
 
- const getRegistrationFormLink = () => {
- return selectedType ? REGISTRATION_FORMS[selectedType] : null;
- };
+  const getAmount = () => {
+    return selectedType === 'conference' ? '200' : '1000';
+  };
 
- const renderPaymentStep = () => (
- <PaymentSection>
- <PaymentTitle>💳 Step 1: Complete Your Payment</PaymentTitle>
- 
- <AmountDisplay>
- <AmountLabel>{selectedType === 'conference' ? 'Registration Fee' : 'Workshop Fee'}</AmountLabel>
- <AmountValue>₹{getAmount()}</AmountValue>
- </AmountDisplay>
+  const handlePaymentComplete = () => {
+    setPaymentCompleted(true);
+  };
 
- <PaymentButtonWrapper>
- <form id={`rzp_payment_form_${currentPaymentButtonId}`}></form>
- </PaymentButtonWrapper>
+  const getRegistrationFormLink = () => {
+    return selectedType ? REGISTRATION_FORMS[selectedType] : null;
+  };
 
- <PaymentInstruction>
- <InstructionTitle>📋 Payment Instructions:</InstructionTitle>
- <InstructionList>
- <li>Click the Razorpay payment button above</li>
- <li>Complete your payment using UPI, Card, Net Banking, or Wallet</li>
- <li>After successful payment, you will receive a confirmation</li>
- <li>Click "I've Completed Payment" button below to proceed to registration</li>
- </InstructionList>
- </PaymentInstruction>
+  const renderPaymentStep = () => (
+    <PaymentSection>
+      <PaymentTitle>💳 Step 1: Complete Your Payment</PaymentTitle>
 
- <div style={{ textAlign: 'center', marginTop: '30px' }}>
- <NextStepButton onClick={handlePaymentComplete}>
- ✓ I've Completed Payment - Proceed to Registration
- </NextStepButton>
- </div>
+      <AmountDisplay>
+        <AmountLabel>{selectedType === 'conference' ? 'Registration Fee' : 'Workshop Fee'}</AmountLabel>
+        <AmountValue>₹{getAmount()}</AmountValue>
+      </AmountDisplay>
 
- <ContactSection>
- <ContactTitle>Need Help?</ContactTitle>
- <ContactInfo>
- <ContactItem href="https://wa.me/919994718784">📱 WhatsApp: 9994718784</ContactItem>
- <ContactItem href="https://wa.me/918526738028">📱 WhatsApp: 8526738028</ContactItem>
- </ContactInfo>
- </ContactSection>
- </PaymentSection>
- );
+      <PaymentButtonWrapper>
+        <form id={`rzp_payment_form_${currentPaymentButtonId}`}></form>
+      </PaymentButtonWrapper>
 
- const renderRegistrationStep = () => (
- <PaymentSection>
- <SuccessBox>
- <SuccessIcon>✓</SuccessIcon>
- <SuccessTitle>Payment Successful!</SuccessTitle>
- <SuccessMessage>
- Thank you for your payment. Please complete your registration by filling out the form below.
- </SuccessMessage>
- </SuccessBox>
+      <PaymentInstruction>
+        <InstructionTitle>📋 Payment Instructions:</InstructionTitle>
+        <InstructionList>
+          <li>Click the Razorpay payment button above</li>
+          <li>Complete your payment using UPI, Card, Net Banking, or Wallet</li>
+          <li>After successful payment, you will receive a confirmation</li>
+          <li>Click "I've Completed Payment" button below to proceed to registration</li>
+        </InstructionList>
+      </PaymentInstruction>
 
- <FormSection>
- <ContactTitle>📝 Step 2: Complete Your Registration</ContactTitle>
- <FormDescription>
- Please fill out the registration form with your details. This is required to confirm your attendance 
- and provide you with event updates.
- </FormDescription>
- <RegisterLink 
- href={getRegistrationFormLink()}
- target="_blank"
- rel="noopener noreferrer"
- >
- Complete Registration Form →
- </RegisterLink>
- </FormSection>
+      <div style={{ textAlign: 'center', marginTop: '30px' }}>
+        <NextStepButton onClick={handlePaymentComplete}>
+          ✓ I've Completed Payment - Proceed to Registration
+        </NextStepButton>
+      </div>
 
- <PaymentInstruction style={{ marginTop: '30px' }}>
- <InstructionTitle>📋 Next Steps:</InstructionTitle>
- <InstructionList>
- <li>Click the "Complete Registration Form" button above</li>
- <li>Fill out all required fields in the Google Form</li>
- <li>Take a screenshot of your payment confirmation</li>
- <li>Share the payment screenshot via WhatsApp to the numbers below</li>
- <li>You will receive a confirmation email within 24 hours</li>
- </InstructionList>
- </PaymentInstruction>
+      <ContactSection>
+        <ContactTitle>Need Help?</ContactTitle>
+        <ContactInfo>
+          <ContactItem href="https://wa.me/919994718784">📱 WhatsApp: 9994718784</ContactItem>
+          <ContactItem href="https://wa.me/918526738028">📱 WhatsApp: 8526738028</ContactItem>
+        </ContactInfo>
+      </ContactSection>
+    </PaymentSection>
+  );
 
- <ContactSection>
- <ContactTitle>Share Payment Screenshot</ContactTitle>
- <ContactInfo>
- <ContactItem href="https://wa.me/919994718784">📱 WhatsApp: 9994718784</ContactItem>
- <ContactItem href="https://wa.me/918526738028">📱 WhatsApp: 8526738028</ContactItem>
- </ContactInfo>
- <Description style={{ marginTop: '15px', fontSize: '0.95rem' }}>
- Your registration will be confirmed once we receive your payment screenshot
- </Description>
- </ContactSection>
- </PaymentSection>
- );
+  const renderRegistrationStep = () => (
+    <PaymentSection>
+      <SuccessBox>
+        <SuccessIcon>✓</SuccessIcon>
+        <SuccessTitle>Payment Successful!</SuccessTitle>
+        <SuccessMessage>
+          Thank you for your payment. Please complete your registration by filling out the form below.
+        </SuccessMessage>
+      </SuccessBox>
 
- const renderConferenceDetails = () => (
- <ContentCard>
- <EventTitle>SHANCON 3.0 – Main Conference</EventTitle>
- <Description>
- Join us for a comprehensive update on Gastroenterology, bringing together leading experts 
- to discuss the latest advancements in clinical practice, surgical innovation, and robotic surgery.
- </Description>
+      <FormSection>
+        <ContactTitle>📝 Step 2: Complete Your Registration</ContactTitle>
+        <FormDescription>
+          Please fill out the registration form with your details. This is required to confirm your attendance
+          and provide you with event updates.
+        </FormDescription>
+        <RegisterLink
+          href={getRegistrationFormLink()}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Complete Registration Form →
+        </RegisterLink>
+      </FormSection>
 
- <InfoGrid>
- <InfoItem>
- <InfoLabel>📅 Date</InfoLabel>
- <InfoValue>26th October 2025</InfoValue>
- </InfoItem>
- <InfoItem>
- <InfoLabel>📍 Venue</InfoLabel>
- <InfoValue>Radisson, Salem</InfoValue>
- </InfoItem>
- <InfoItem>
- <InfoLabel>🕗 Time</InfoLabel>
- <InfoValue>From 8:30 AM onwards</InfoValue>
- </InfoItem>
- <InfoItem>
- <InfoLabel>💰 Registration Fee</InfoLabel>
- <InfoValue>₹200</InfoValue>
- </InfoItem>
- </InfoGrid>
+      <PaymentInstruction style={{ marginTop: '30px' }}>
+        <InstructionTitle>📋 Next Steps:</InstructionTitle>
+        <InstructionList>
+          <li>Click the "Complete Registration Form" button above</li>
+          <li>Fill out all required fields in the Google Form</li>
+          <li>Take a screenshot of your payment confirmation</li>
+          <li>Share the payment screenshot via WhatsApp to the numbers below</li>
+          <li>You will receive a confirmation email within 24 hours</li>
+        </InstructionList>
+      </PaymentInstruction>
 
- <HighlightBox>
- <strong>TNMC Approved – 2 Credit Points</strong>
- </HighlightBox>
+      <ContactSection>
+        <ContactTitle>Share Payment Screenshot</ContactTitle>
+        <ContactInfo>
+          <ContactItem href="https://wa.me/919994718784">📱 WhatsApp: 9994718784</ContactItem>
+          <ContactItem href="https://wa.me/918526738028">📱 WhatsApp: 8526738028</ContactItem>
+        </ContactInfo>
+        <Description style={{ marginTop: '15px', fontSize: '0.95rem' }}>
+          Your registration will be confirmed once we receive your payment screenshot
+        </Description>
+      </ContactSection>
+    </PaymentSection>
+  );
 
- <Description>
- <strong>Post Conference Workshop (4:05 PM - 6:00 PM)</strong><br/>
- Esophageal manometry & 24 hr pH study<br/>
- Limited seats: 30 participants | Prior Registration Required
- </Description>
+  const renderConferenceDetails = () => (
+    <ContentCard>
+      <EventTitle>SHANCON 3.0 – Main Conference</EventTitle>
+      <Description>
+        Join us for a comprehensive update on Gastroenterology, bringing together leading experts
+        to discuss the latest advancements in clinical practice, surgical innovation, and robotic surgery.
+      </Description>
 
- {!paymentCompleted ? renderPaymentStep() : renderRegistrationStep()}
- </ContentCard>
- );
+      <InfoGrid>
+        <InfoItem>
+          <InfoLabel>📅 Date</InfoLabel>
+          <InfoValue>26th October 2025</InfoValue>
+        </InfoItem>
+        <InfoItem>
+          <InfoLabel>📍 Venue</InfoLabel>
+          <InfoValue>Radisson, Salem</InfoValue>
+        </InfoItem>
+        <InfoItem>
+          <InfoLabel>🕗 Time</InfoLabel>
+          <InfoValue>From 8:30 AM onwards</InfoValue>
+        </InfoItem>
+        <InfoItem>
+          <InfoLabel>💰 Registration Fee</InfoLabel>
+          <InfoValue>₹200</InfoValue>
+        </InfoItem>
+      </InfoGrid>
 
- const renderWorkshopDetails = () => (
- <ContentCard>
- <EventTitle>Pre-Conference Workshop</EventTitle>
- <Description>
- <strong>Hands-on Robotic Surgery Simulation Workshop</strong><br/>
- An exclusive practical session for surgical professionals
- </Description>
+      <HighlightBox>
+        <strong>TNMC Approved – 2 Credit Points</strong>
+      </HighlightBox>
 
- <InfoGrid>
- <InfoItem>
- <InfoLabel>📅 Date</InfoLabel>
- <InfoValue>25th October 2025</InfoValue>
- </InfoItem>
- <InfoItem>
- <InfoLabel>📍 Venue</InfoLabel>
- <InfoValue>Shanmuga Hospital, Salem</InfoValue>
- </InfoItem>
- <InfoItem>
- <InfoLabel>🕗 Time</InfoLabel>
- <InfoValue>8:30 AM – 11:00 AM</InfoValue>
- </InfoItem>
- <InfoItem>
- <InfoLabel>💰 Course Fee</InfoLabel>
- <InfoValue>₹1,000</InfoValue>
- </InfoItem>
- </InfoGrid>
+      <Description>
+        <strong>Post Conference Workshop (4:05 PM - 6:00 PM)</strong><br />
+        Esophageal manometry & 24 hr pH study<br />
+        Limited seats: 30 participants | Prior Registration Required
+      </Description>
 
- <HighlightBox>
- <strong>⚠️ Limited to 10 Participants Only</strong><br/>
- Registration is Mandatory
- </HighlightBox>
+      {!paymentCompleted ? renderPaymentStep() : renderRegistrationStep()}
+    </ContentCard>
+  );
 
- <Description>
- <strong>Workshop Instructors:</strong><br/>
- Dr. P. Prabusankar - M.S., M.R.C.S. (General, Laparoscopic & Robotic Surgeon)<br/>
- Dr. P. Arunraj – MS, M.Ch(SGE) (Surgical Gastroenterologist & Robotic Surgeon)
- </Description>
+  const renderWorkshopDetails = () => (
+    <ContentCard>
+      <EventTitle>Pre-Conference Workshop</EventTitle>
+      <Description>
+        <strong>Hands-on Robotic Surgery Simulation Workshop</strong><br />
+        An exclusive practical session for surgical professionals
+      </Description>
 
- {!paymentCompleted ? renderPaymentStep() : renderRegistrationStep()}
- </ContentCard>
- );
+      <InfoGrid>
+        <InfoItem>
+          <InfoLabel>📅 Date</InfoLabel>
+          <InfoValue>25th October 2025</InfoValue>
+        </InfoItem>
+        <InfoItem>
+          <InfoLabel>📍 Venue</InfoLabel>
+          <InfoValue>Shanmuga Hospital, Salem</InfoValue>
+        </InfoItem>
+        <InfoItem>
+          <InfoLabel>🕗 Time</InfoLabel>
+          <InfoValue>8:30 AM – 11:00 AM</InfoValue>
+        </InfoItem>
+        <InfoItem>
+          <InfoLabel>💰 Course Fee</InfoLabel>
+          <InfoValue>₹1,000</InfoValue>
+        </InfoItem>
+      </InfoGrid>
 
- return (
- <Container>
- <Header>
- <Title>SHANCON 3.0</Title>
- <Subtitle>Gastro Update 2025</Subtitle>
- <Subtitle>Organized by Shanmuga Hospital Ltd., Salem</Subtitle>
- <Badge>TNMC Approved – 2 Credit Points</Badge>
- </Header>
+      <HighlightBox>
+        <strong>⚠️ Limited to 10 Participants Only</strong><br />
+        Registration is Mandatory
+      </HighlightBox>
 
- <ImageGallerySection>
- <SectionTitle>Event Information</SectionTitle>
- <ImageGalleryGrid>
- {eventImages.map((image, index) => (
- <ImageCard key={index}>
- <GalleryImage 
- src={image.src} 
- alt={image.alt}
- loading="lazy"
- />
- <ImageCaption>{image.caption}</ImageCaption>
- </ImageCard>
- ))}
- </ImageGalleryGrid>
- </ImageGallerySection>
+      <Description>
+        <strong>Workshop Instructors:</strong><br />
+        Dr. P. Prabusankar - M.S., M.R.C.S. (General, Laparoscopic & Robotic Surgeon)<br />
+        Dr. P. Arunraj – MS, M.Ch(SGE) (Surgical Gastroenterologist & Robotic Surgeon)
+      </Description>
 
- <RegistrationTypeSection>
- <SectionTitle>Select Registration Type</SectionTitle>
- <ButtonGroup>
- <RegistrationButton
- $active={selectedType === 'conference'}
- onClick={() => {
- setSelectedType('conference');
- setPaymentCompleted(false);
- }}
- >
- Main Conference<br/>
- <small style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>₹200 | 26 Oct 2025</small>
- </RegistrationButton>
- <RegistrationButton
- $active={selectedType === 'workshop'}
- onClick={() => {
- setSelectedType('workshop');
- setPaymentCompleted(false);
- }}
- >
- Pre-Conference Workshop<br/>
- <small style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>₹1000 | 25 Oct 2025</small>
- </RegistrationButton>
- </ButtonGroup>
- </RegistrationTypeSection>
+      {!paymentCompleted ? renderPaymentStep() : renderRegistrationStep()}
+    </ContentCard>
+  );
 
- {selectedType === 'conference' && renderConferenceDetails()}
- {selectedType === 'workshop' && renderWorkshopDetails()}
- </Container>
- );
+  return (
+    <>
+      <GlobalStyle />
+      <Container>
+        <Header>
+          <Title>SHANCON 3.0</Title>
+          <Subtitle>Gastro Update 2025</Subtitle>
+          <Subtitle>Organized by Shanmuga Hospital Ltd., Salem</Subtitle>
+          <Badge>TNMC Approved – 2 Credit Points</Badge>
+        </Header>
+
+        <ImageGallerySection>
+          <SectionTitle>Event Information</SectionTitle>
+          <ImageGalleryGrid>
+            {eventImages.map((image, index) => (
+              <ImageCard key={index}>
+                <GalleryImage
+                  src={image.src}
+                  alt={image.alt}
+                  loading="lazy"
+                />
+                <ImageCaption>{image.caption}</ImageCaption>
+              </ImageCard>
+            ))}
+          </ImageGalleryGrid>
+        </ImageGallerySection>
+
+        <RegistrationTypeSection>
+          <SectionTitle>Select Registration Type</SectionTitle>
+          <ButtonGroup>
+            <RegistrationButton
+              $active={selectedType === 'conference'}
+              onClick={() => {
+                setSelectedType('conference');
+                setPaymentCompleted(false);
+              }}
+            >
+              Main Conference<br />
+              <small style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>₹200 | 26 Oct 2025</small>
+            </RegistrationButton>
+            <RegistrationButton
+              $active={selectedType === 'workshop'}
+              onClick={() => {
+                setSelectedType('workshop');
+                setPaymentCompleted(false);
+              }}
+            >
+              Pre-Conference Workshop<br />
+              <small style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>₹1000 | 25 Oct 2025</small>
+            </RegistrationButton>
+          </ButtonGroup>
+        </RegistrationTypeSection>
+
+        {selectedType === 'conference' && renderConferenceDetails()}
+        {selectedType === 'workshop' && renderWorkshopDetails()}
+      </Container>
+    </>
+  );
 };
 
 export default ShanconRegistration;

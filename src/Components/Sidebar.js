@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
 import {
-  LayoutDashboard,
+  LayoutGrid,
   UserPlus,
   Users,
-  FileText,
-  Camera,
-  Scan,
+  FileBarChart,
+  ScanFace,
+  MonitorSmartphone,
   LogOut,
   Menu,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Settings,
+  HelpCircle
 } from 'lucide-react';
 
 // Global Styles
@@ -56,13 +59,12 @@ const SidebarContainer = styled.aside`
   top: 0;
   left: 0;
   height: 100vh;
-  width: ${props => props.$isCollapsed ? '80px' : '280px'};
-  background: var(--glass);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-right: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: ${props => props.$isCollapsed ? '88px' : '280px'};
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.98) 100%);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   z-index: 1000;
   display: ${props => props.$hidden ? 'none' : 'flex'};
   flex-direction: column;
@@ -76,48 +78,60 @@ const SidebarContainer = styled.aside`
 `;
 
 const SidebarHeader = styled.div`
-  padding: 24px 20px;
-  border-bottom: 1px solid var(--border);
+  padding: ${props => props.$isCollapsed ? '24px 0' : '24px 20px'};
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
+  flex-direction: ${props => props.$isCollapsed ? 'column' : 'row'};
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: ${props => props.$isCollapsed ? 'center' : 'space-between'};
+  gap: ${props => props.$isCollapsed ? '16px' : '12px'};
   min-height: 80px;
+  transition: all 0.3s ease;
 `;
 
 const LogoSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: ${props => props.$isCollapsed ? '0' : '12px'};
   overflow: hidden;
+  transition: all 0.3s ease;
 `;
 
 const LogoIcon = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 `;
 
 const LogoText = styled.div`
   opacity: ${props => props.$isCollapsed ? '0' : '1'};
-  transition: opacity 0.2s ease;
+  width: ${props => props.$isCollapsed ? '0' : 'auto'};
+  transition: all 0.2s ease;
   white-space: nowrap;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    opacity: 1;
+    width: auto;
+  }
 `;
 
 const CompanyName = styled.h1`
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 800;
   margin: 0;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: linear-gradient(to right, #fff, #94a3b8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: -0.5px;
 `;
 
 const CompanyTagline = styled.p`
@@ -143,8 +157,9 @@ const CollapseButton = styled.button`
 
   &:hover {
     background: rgba(255,255,255,0.1);
-    color: var(--text);
-    border-color: var(--primary);
+    color: white;
+    border-color: rgba(255,255,255,0.3);
+    transform: scale(1.05);
   }
 
   @media (max-width: 768px) {
@@ -176,62 +191,92 @@ const NavSection = styled.div`
 `;
 
 const NavSectionTitle = styled.div`
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
-  padding: 8px 16px;
-  margin-bottom: 4px;
+  letter-spacing: 1.5px;
+  color: #64748b;
+  padding: 0 18px;
+  margin: 24px 0 12px;
   opacity: ${props => props.$isCollapsed ? '0' : '1'};
-  transition: opacity 0.2s ease;
+  height: ${props => props.$isCollapsed ? '0' : 'auto'};
+  overflow: hidden;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    opacity: 1;
+    height: auto;
+  }
+`;
+
+const PortalTooltip = styled.div`
+  position: fixed;
+  z-index: 9999;
+  background: #1e293b;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  transform: translateY(-50%);
+  animation: tooltipFade 0.2s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent #1e293b transparent transparent;
+  }
+
+  @keyframes tooltipFade {
+    from { opacity: 0; transform: translateY(-50%) translateX(-5px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
 `;
 
 const NavItem = styled(NavLink)`
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  color: var(--muted);
+  justify-content: ${props => props.$isCollapsed ? 'center' : 'flex-start'};
+  gap: ${props => props.$isCollapsed ? '0' : '14px'};
+  padding: ${props => props.$isCollapsed ? '14px 0' : '14px 18px'};
+  margin: 4px 12px;
+  border-radius: 12px;
+  color: #94a3b8;
   text-decoration: none;
-  transition: var(--transition);
+  transition: all 0.2s ease;
   position: relative;
-  overflow: hidden;
-  margin-bottom: 4px;
-  white-space: nowrap;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 3px;
-    background: var(--primary);
-    transform: scaleY(0);
-    transition: transform 0.2s ease;
-  }
+  overflow: visible;
 
   &:hover {
-    background: rgba(255,255,255,0.08);
-    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+    color: #f1f5f9;
 
-    &::before {
-      transform: scaleY(1);
+    ${PortalTooltip} {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(-50%) translateX(0);
     }
   }
 
   &.active {
-    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15));
-    color: var(--primary);
-    font-weight: 600;
+    background: ${props => props.$isCollapsed ? 'transparent' : 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))'};
+    color: #818cf8;
+    box-shadow: ${props => props.$isCollapsed ? 'none' : '0 0 0 1px rgba(99, 102, 241, 0.2)'};
 
-    &::before {
-      transform: scaleY(1);
+    svg {
+      filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
     }
   }
-
   svg {
     flex-shrink: 0;
   }
@@ -239,8 +284,16 @@ const NavItem = styled(NavLink)`
 
 const NavItemText = styled.span`
   opacity: ${props => props.$isCollapsed ? '0' : '1'};
-  transition: opacity 0.2s ease;
+  width: ${props => props.$isCollapsed ? '0' : 'auto'};
+  overflow: hidden;
+  transition: all 0.2s ease;
   flex: 1;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    opacity: 1;
+    width: auto;
+  }
 `;
 
 const SidebarFooter = styled.div`
@@ -251,32 +304,46 @@ const SidebarFooter = styled.div`
 const UserSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  background: rgba(255,255,255,0.05);
-  margin-bottom: 8px;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
 `;
 
 const UserAvatar = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--primary));
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15px;
   color: white;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
 `;
 
 const UserInfo = styled.div`
   flex: 1;
   overflow: hidden;
   opacity: ${props => props.$isCollapsed ? '0' : '1'};
-  transition: opacity 0.2s ease;
+  width: ${props => props.$isCollapsed ? '0' : 'auto'};
+  transition: all 0.2s ease;
+
+  @media (max-width: 768px) {
+    opacity: 1;
+    width: auto;
+  }
 `;
 
 const UserName = styled.div`
@@ -309,15 +376,27 @@ const LogoutButton = styled.button`
   cursor: pointer;
   transition: var(--transition);
 
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
+
   &:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: var(--danger);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    transform: translateY(-1px);
   }
 
   svg {
     flex-shrink: 0;
+  }
+`;
+
+const LogoutText = styled.span`
+  display: ${props => props.$isCollapsed ? 'none' : 'block'};
+  
+  @media (max-width: 768px) {
+    display: block;
   }
 `;
 
@@ -371,41 +450,61 @@ const MobileMenuButton = styled.button`
 
 // Menu Items Configuration
 const menuItems = [
+
   {
-    section: 'Reports',
+    section: 'Employee Management',
     items: [
-      { path: '/AttendanceReport', icon: FileText, label: 'Attendance Report' },
+      { path: '/register', icon: UserPlus, label: 'Register Employee' },
+      { path: '/HRAction', icon: Users, label: 'All Employees' },
+      { path: '/Faceencoding', icon: ScanFace, label: 'Face Encoding' },
     ]
   },
   {
-    section: 'Management',
+    section: 'Analytics',
     items: [
-      { path: '/register', icon: UserPlus, label: 'Register Employee' },
-      { path: '/Hrregister', icon: UserPlus, label: 'HR Register' },
-      { path: '/HRAction', icon: Users, label: 'Employee Management' },
-      { path: '/Faceencoding', icon: Scan, label: 'Face Encoding' },
+      { path: '/AttendanceReport', icon: FileBarChart, label: 'Attendance Report' },
+    ]
+  },
+  {
+    section: 'System',
+    items: [
+      { path: '/Hrregister', icon: MonitorSmartphone, label: 'Device Registration' },
     ]
   }
 ];
 
 // Main Sidebar Component
-const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   // Hide sidebar for Face Recognition page
-  const shouldHideSidebar = location.pathname === '/';
+  const shouldHideSidebar = location.pathname === '/webcam';
 
   const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
-    navigate('/login');
+    navigate('/');
   };
 
   const closeMobileMenu = () => {
     setIsMobileOpen(false);
+  };
+
+  const handleMouseEnter = (e, label) => {
+    if (!isCollapsed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setActiveTooltip({
+      label,
+      top: rect.top + rect.height / 2,
+      left: rect.right + 12
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setActiveTooltip(null);
   };
 
   // Don't render sidebar for Face Recognition page
@@ -416,8 +515,15 @@ const Sidebar = () => {
   return (
     <>
       <GlobalStyle />
-      
-      <MobileMenuButton 
+
+      {activeTooltip && isCollapsed && createPortal(
+        <PortalTooltip style={{ top: activeTooltip.top, left: activeTooltip.left }}>
+          {activeTooltip.label}
+        </PortalTooltip>,
+        document.body
+      )}
+
+      <MobileMenuButton
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         $hidden={shouldHideSidebar}
       >
@@ -426,19 +532,19 @@ const Sidebar = () => {
 
       <MobileOverlay $isOpen={isMobileOpen} onClick={closeMobileMenu} />
 
-      <SidebarContainer 
-        $isCollapsed={isCollapsed} 
+      <SidebarContainer
+        $isCollapsed={isCollapsed}
         $isOpen={isMobileOpen}
         $hidden={shouldHideSidebar}
       >
-        <SidebarHeader>
-          <LogoSection>
+        <SidebarHeader $isCollapsed={isCollapsed}>
+          <LogoSection $isCollapsed={isCollapsed}>
             <LogoIcon>
-              <LayoutDashboard size={22} color="white" />
+              <LayoutGrid size={24} color="white" />
             </LogoIcon>
             <LogoText $isCollapsed={isCollapsed}>
-              <CompanyName>HR System</CompanyName>
-              <CompanyTagline>Attendance & Management</CompanyTagline>
+              <CompanyName>HR Portal</CompanyName>
+              <CompanyTagline>Admin Dashboard</CompanyTagline>
             </LogoText>
           </LogoSection>
           <CollapseButton onClick={() => setIsCollapsed(!isCollapsed)}>
@@ -453,10 +559,13 @@ const Sidebar = () => {
                 {section.section}
               </NavSectionTitle>
               {section.items.map((item, itemIdx) => (
-                <NavItem 
-                  key={itemIdx} 
+                <NavItem
+                  key={itemIdx}
                   to={item.path}
+                  $isCollapsed={isCollapsed}
                   onClick={closeMobileMenu}
+                  onMouseEnter={(e) => handleMouseEnter(e, item.label)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <item.icon size={20} />
                   <NavItemText $isCollapsed={isCollapsed}>
@@ -479,12 +588,12 @@ const Sidebar = () => {
             </UserInfo>
           </UserSection>
 
-          <LogoutButton 
+          <LogoutButton
             onClick={handleLogout}
             $isCollapsed={isCollapsed}
           >
             <LogOut size={20} />
-            {!isCollapsed && <span>Logout</span>}
+            <LogoutText $isCollapsed={isCollapsed}>Logout</LogoutText>
           </LogoutButton>
         </SidebarFooter>
       </SidebarContainer>

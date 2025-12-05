@@ -2,6 +2,10 @@ import React, { useRef, useCallback, useMemo, useState, useEffect } from "react"
 import Webcam from "react-webcam";
 import axios from "axios";
 import styled, { createGlobalStyle, keyframes } from "styled-components";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 
 // Global visual baseline
 const GlobalStyle = createGlobalStyle`
@@ -24,9 +28,8 @@ const GlobalStyle = createGlobalStyle`
     --transition: all .2s ease;
   }
   * { box-sizing: border-box; }
-  html, body, #root { height: 100%; }
+  html, body, #root { height: 100%; margin: 0; overflow: hidden; }
   body {
-    margin: 0;
     color: var(--text);
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     background:
@@ -36,54 +39,105 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
+// Responsive layout - NO SCROLL
 const Shell = styled.div`
-  min-height: 100%;
+  height: 100vh;
+  width: 100vw;
   display: grid;
   place-items: center;
-  padding: 28px 16px;
+  padding: 2vh 2vw;
+  background: transparent;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding: 1vh 1vw;
+  }
 `;
 
 const Card = styled.div`
   width: 100%;
-  max-width: 720px;
+  max-width: 680px;
+  max-height: 96vh;
   background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
   border: 1px solid var(--border);
   backdrop-filter: blur(14px) saturate(140%);
   border-radius: 18px;
   box-shadow: var(--shadow);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 900px) {
+    max-width: 96vw;
+    max-height: 98vh;
+    border-radius: 11px;
+  }
+  @media (max-width: 600px) {
+    max-width: 98vw;
+    border-radius: 8px;
+  }
 `;
 
 const Header = styled.header`
-  padding: 18px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.14);
   background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(34,211,238,0.18));
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const LogoutButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text);
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--danger);
+  }
 `;
 
 const Title = styled.h2`
   margin: 0;
-  font-size: 18px;
+  font-size: clamp(1rem, 2vw, 1.25rem);
   letter-spacing: .2px;
 `;
 
 const Body = styled.div`
-  padding: 18px;
-  display: grid;
-  gap: 14px;
+  padding: clamp(8px, 2vh, 18px) clamp(10px, 2vw, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 `;
 
-// Initial selection screen
 const SelectionScreen = styled.div`
-  padding: 40px 20px;
+  padding: 6vh 2vw;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
+  justify-content: center;
+  min-height: 100%;
 `;
 
 const SelectionTitle = styled.h3`
   margin: 0;
-  font-size: 22px;
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
   font-weight: 600;
   text-align: center;
   color: var(--text);
@@ -91,16 +145,21 @@ const SelectionTitle = styled.h3`
 
 const SelectionSubtitle = styled.p`
   margin: 0;
-  font-size: 14px;
+  font-size: clamp(0.9rem, 1.8vw, 1rem);
   color: var(--muted);
   text-align: center;
 `;
 
 const ButtonGroup = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
-  max-width: 400px;
+  max-width: 380px;
+  
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 10px;
+  }
 `;
 
 const CameraWrap = styled.div`
@@ -110,8 +169,13 @@ const CameraWrap = styled.div`
   border-radius: var(--radius);
   overflow: hidden;
   aspect-ratio: 4 / 3;
-  display: grid;
-  place-items: center;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+
+  @media (max-width: 900px) {
+    max-width: 92vw;
+  }
 `;
 
 const WebcamBox = styled.div`
@@ -134,20 +198,21 @@ const Overlay = styled.div`
 
 const Controls = styled.div`
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
 `;
 
 const Button = styled.button`
-  appearance: none;
   border: 1px solid rgba(255,255,255,0.16);
   background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.25));
   color: var(--text);
   padding: 10px 14px;
   border-radius: 12px;
   font-weight: 600;
-  letter-spacing: .2px;
+  font-size: clamp(0.9rem, 1.8vw, 1rem);
+  min-width: 100px;
   cursor: pointer;
   transition: var(--transition);
   flex: 1;
@@ -157,26 +222,20 @@ const Button = styled.button`
   &:focus-visible { outline: none; box-shadow: var(--ring); }
 `;
 
-const Secondary = styled(Button)`
-  background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
-`;
-
 const InBtn = styled(Button)`
   background: linear-gradient(135deg, rgba(16,185,129,0.28), rgba(45,212,191,0.28));
   border-color: rgba(16,185,129,0.45);
-  font-size: 16px;
-  padding: 16px 24px;
+  padding: 14px 20px;
 `;
 
 const OutBtn = styled(Button)`
   background: linear-gradient(135deg, rgba(239,68,68,0.25), rgba(248,113,113,0.28));
   border-color: rgba(239,68,68,0.40);
-  font-size: 16px;
-  padding: 16px 24px;
+  padding: 14px 20px;
 `;
 
 const Hint = styled.span`
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
 `;
 
@@ -184,55 +243,53 @@ const Row = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 `;
 
 const BackButton = styled(Button)`
   background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
-  padding: 8px 16px;
-  font-size: 14px;
+  padding: 7px 12px;
+  font-size: 13px;
   flex: none;
+  min-width: auto;
 `;
 
-// Success screen animation
 const fadeIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0); }
 `;
 
 const SuccessScreen = styled.div`
-  padding: 40px 20px;
+  padding: 3vh 2vw;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
   animation: ${fadeIn} 0.5s ease-out;
+  max-height: 100%;
+  overflow-y: auto;
 `;
 
 const SuccessIcon = styled.div`
-  width: 80px;
-  height: 80px;
+  width: clamp(60px, 10vw, 70px);
+  height: clamp(60px, 10vw, 70px);
   border-radius: 50%;
-  background: ${props => props.$mode === 'IN' 
-    ? 'linear-gradient(135deg, rgba(16,185,129,0.28), rgba(45,212,191,0.28))' 
+  background: ${props => props.$mode === 'IN'
+    ? 'linear-gradient(135deg, rgba(16,185,129,0.28), rgba(45,212,191,0.28))'
     : 'linear-gradient(135deg, rgba(239,68,68,0.25), rgba(248,113,113,0.28))'};
-  border: 2px solid ${props => props.$mode === 'IN' 
-    ? 'rgba(16,185,129,0.45)' 
+  border: 2px solid ${props => props.$mode === 'IN'
+    ? 'rgba(16,185,129,0.45)'
     : 'rgba(239,68,68,0.40)'};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
+  font-size: clamp(28px, 5vw, 36px);
+  flex-shrink: 0;
 `;
 
 const SuccessTitle = styled.h3`
   margin: 0;
-  font-size: 24px;
+  font-size: clamp(1.1rem, 2.2vw, 1.3rem);
   font-weight: 700;
   text-align: center;
   color: var(--text);
@@ -240,62 +297,90 @@ const SuccessTitle = styled.h3`
 
 const SuccessSubtitle = styled.p`
   margin: 0;
-  font-size: 14px;
+  font-size: clamp(0.85rem, 1.6vw, 0.95rem);
   color: var(--muted);
   text-align: center;
 `;
 
-// Result card styles
+const CapturedImageWrap = styled.div`
+  width: 100%;
+  max-width: 240px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid ${props => props.$mode === 'IN'
+    ? 'rgba(16,185,129,0.45)'
+    : 'rgba(239,68,68,0.40)'};
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  flex-shrink: 0;
+
+  @media (max-width: 600px) {
+    max-width: 82vw;
+  }
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+`;
+
 const ResultCard = styled.div`
   width: 100%;
-  padding: 16px;
-  border-radius: 12px;
+  padding: 12px;
+  border-radius: 10px;
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.16);
   display: grid;
-  gap: 12px;
+  gap: 8px;
+  max-width: 360px;
+  flex-shrink: 0;
+
+  @media (max-width: 600px) {
+    max-width: 92vw;
+    padding: 10px;
+  }
 `;
 
 const ResultLine = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
+  font-size: clamp(12px, 1.8vw, 13px);
   color: var(--text);
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   
-  &:last-child {
-    border-bottom: none;
-  }
+  &:last-child { border-bottom: none; }
   
   span.key { 
     color: var(--muted); 
-    font-weight: 500;
+    font-weight: 500; 
+    flex-shrink: 0;
   }
   span.val { 
     font-weight: 600;
     text-align: right;
+    word-break: break-word;
   }
 `;
 
 const ModeIndicator = styled.div`
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 8px;
-  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 7px;
+  font-size: 11px;
   font-weight: 600;
-  background: ${props => props.$mode === 'IN' 
-    ? 'linear-gradient(135deg, rgba(16,185,129,0.28), rgba(45,212,191,0.28))' 
+  background: ${props => props.$mode === 'IN'
+    ? 'linear-gradient(135deg, rgba(16,185,129,0.28), rgba(45,212,191,0.28))'
     : 'linear-gradient(135deg, rgba(239,68,68,0.25), rgba(248,113,113,0.28))'};
-  border: 1px solid ${props => props.$mode === 'IN' 
-    ? 'rgba(16,185,129,0.45)' 
+  border: 1px solid ${props => props.$mode === 'IN'
+    ? 'rgba(16,185,129,0.45)'
     : 'rgba(239,68,68,0.40)'};
 `;
 
 const CountdownText = styled.p`
-  margin: 12px 0 0 0;
-  font-size: 13px;
+  margin: 8px 0 0 0;
+  font-size: clamp(11px, 1.6vw, 12px);
   color: var(--muted);
   text-align: center;
 `;
@@ -309,8 +394,10 @@ export default function WebcamCapture({ onResult }) {
   const [showCamera, setShowCamera] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [capturedImage, setCapturedImage] = useState(null);
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
-  
+  const navigate = useNavigate();
+
   const mirrored = facingMode === "user";
   const videoConstraints = useMemo(() => ({
     facingMode,
@@ -318,98 +405,105 @@ export default function WebcamCapture({ onResult }) {
     height: { ideal: 720 },
   }), [facingMode]);
 
-  // Auto-redirect countdown after success
   useEffect(() => {
     if (showSuccess && countdown > 0) {
       const timer = setTimeout(() => {
         setCountdown(countdown - 1);
-      }, 500);
+      }, 1000);
       return () => clearTimeout(timer);
     } else if (showSuccess && countdown === 0) {
       handleReset();
     }
   }, [showSuccess, countdown]);
 
-  // Handle mode selection (IN or OUT)
   const handleModeSelection = useCallback((mode) => {
     setSelectedMode(mode);
     setShowCamera(true);
     setShowSuccess(false);
   }, []);
 
-  // Reset to initial screen
   const handleReset = useCallback(() => {
     setShowCamera(false);
     setShowSuccess(false);
     setSelectedMode(null);
     setResult(null);
+    setCapturedImage(null);
     setCountdown(5);
   }, []);
 
-  const flip = useCallback(() => {
-    setFacingMode((m) => (m === "user" ? "environment" : "user"));
-  }, []);
+  const captureAndSend = useCallback(async () => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (!imageSrc) {
+      toast.error("Failed to capture image");
+      return;
+    }
 
-  // Capture and send immediately
-const captureAndSend = useCallback(async () => {
-  const imageSrc = webcamRef.current?.getScreenshot();
-  if (!imageSrc) return alert("Failed to capture image");
+    setCapturedImage(imageSrc);
+    setLoading(true);
 
-  setLoading(true);
-  try {
-    // 🔹 Retrieve token (adjust based on where you store it)
-    const token = localStorage.getItem("access_token");
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await axios.post(
+        `${HRbaseurl}mark/`,
+        { image: imageSrc, mode: selectedMode },
+        {
+          headers: {
+            Authorization: `${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setResult(res.data);
+      setShowSuccess(true);
+      setShowCamera(false);
 
-    // 🔹 Make the POST request with Authorization header
-    const res = await axios.post(
-      `${HRbaseurl}mark/`,
-      { image: imageSrc, mode: selectedMode },
-      {
-        headers: {
-          Authorization: `${token}`,  // ✅ Add token
-          "Content-Type": "application/json",
-        },
-      }
-    );
+      // Success toast
+      toast.success(
+        `${selectedMode === "IN" ? "Checked In" : "Checked Out"} Successfully!`,
+        { position: "top-center", autoClose: 2000 }
+      );
 
-    setResult(res.data);
-    setShowSuccess(true);
-    setShowCamera(false);
-    onResult && onResult(res.data);
-  } catch (err) {
-    console.error(err);
-    alert(err?.response?.data?.error || "Attendance marking failed");
-  } finally {
-    setLoading(false);
-  }
-}, [selectedMode, onResult]);
+      onResult && onResult(res.data);
+    } catch (err) {
+      console.error(err);
+      const errorMsg = err?.response?.data?.error || "Attendance marking failed";
+      toast.error(errorMsg, { position: "top-center", autoClose: 3000 });
+      setCapturedImage(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedMode, onResult, HRbaseurl]);
 
-
-  // Format timestamp
   const fmtTimestamp = (iso) => {
     if (!iso) return "-";
-    try { 
+    try {
       return new Date(iso).toLocaleString('en-US', {
         dateStyle: 'medium',
-        timeStyle: 'medium'
-      }); 
-    } catch { 
-      return String(iso); 
+        timeStyle: 'short'
+      });
+    } catch {
+      return String(iso);
     }
+  };
+
+  const handleLogout = () => {
+    navigate("/");
   };
 
   return (
     <>
       <GlobalStyle />
+      <ToastContainer />
       <Shell>
         <Card>
           <Header>
             <Title>Attendance System</Title>
+            <LogoutButton onClick={handleLogout} title="Logout">
+              <LogOut size={20} />
+            </LogoutButton>
           </Header>
-
           <Body>
             {!showCamera && !showSuccess ? (
-              // Initial Selection Screen
               <SelectionScreen>
                 <SelectionTitle>Mark Your Attendance</SelectionTitle>
                 <SelectionSubtitle>
@@ -425,10 +519,9 @@ const captureAndSend = useCallback(async () => {
                 </ButtonGroup>
               </SelectionScreen>
             ) : showSuccess ? (
-              // Success Screen
               <SuccessScreen>
                 <SuccessIcon $mode={result?.mode}>
-                  {result?.mode === "IN" ? "✓" : "✓"}
+                  ✓
                 </SuccessIcon>
                 <SuccessTitle>
                   {result?.mode === "IN" ? "Checked In Successfully!" : "Checked Out Successfully!"}
@@ -436,6 +529,12 @@ const captureAndSend = useCallback(async () => {
                 <SuccessSubtitle>
                   Your attendance has been recorded
                 </SuccessSubtitle>
+
+                {capturedImage && (
+                  <CapturedImageWrap $mode={result?.mode}>
+                    <img src={capturedImage} alt="Captured attendance" />
+                  </CapturedImageWrap>
+                )}
 
                 <ResultCard>
                   <ResultLine>
@@ -461,7 +560,7 @@ const captureAndSend = useCallback(async () => {
                 </ResultCard>
 
                 <CountdownText>
-                  Redirecting to home in {countdown} seconds...
+                  Redirecting in {countdown}s...
                 </CountdownText>
 
                 <Button onClick={handleReset}>
@@ -469,14 +568,13 @@ const captureAndSend = useCallback(async () => {
                 </Button>
               </SuccessScreen>
             ) : (
-              // Camera Screen
               <>
                 <Row>
                   <BackButton onClick={handleReset}>
                     ← Back
                   </BackButton>
                   <ModeIndicator $mode={selectedMode}>
-                    {selectedMode === "IN" ? "Check IN Mode" : "Check OUT Mode"}
+                    {selectedMode === "IN" ? "Check IN" : "Check OUT"}
                   </ModeIndicator>
                 </Row>
 
@@ -489,11 +587,11 @@ const captureAndSend = useCallback(async () => {
                       screenshotFormat="image/jpeg"
                       screenshotQuality={0.92}
                       videoConstraints={videoConstraints}
+                      style={{ width: "100%", height: "100%" }}
                     />
                   </WebcamBox>
                   <Overlay />
                 </CameraWrap>
-
                 <Row>
                   <Hint>Position your face in the center</Hint>
                 </Row>
@@ -502,9 +600,6 @@ const captureAndSend = useCallback(async () => {
                   <Button onClick={captureAndSend} disabled={loading}>
                     {loading ? "Processing..." : `Capture & Submit`}
                   </Button>
-                  {/* <Secondary onClick={flip}>
-                    🔄 Flip Camera
-                  </Secondary> */}
                 </Controls>
               </>
             )}

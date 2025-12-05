@@ -9,7 +9,6 @@ import HRregister from './Components/HRregister';
 import EmployeeHR from './Components/EmployeeHR';
 import AttendanceReport from './Components/AttendanceReport';
 import Faceencoding from './Components/Faceencoding';
-import AudioUpload from './Components/AudioUpload';
 import Fingerprontid from './Components/Deviceid';
 import Sidebar from './Components/Sidebar';
 import { useLocation } from 'react-router-dom';
@@ -26,7 +25,7 @@ const AppLayout = styled.div`
 
 const MainContent = styled.main`
   flex: 1;
-  margin-left: ${props => props.$noSidebar ? '0' : '280px'};
+  margin-left: ${props => props.$noSidebar ? '0' : (props.$isCollapsed ? '80px' : '280px')};
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   @media (max-width: 768px) {
@@ -35,23 +34,20 @@ const MainContent = styled.main`
 `;
 
 const ContentWrapper = styled.div`
-  padding: ${props => props.$noSidebar ? '0' : '20px'};
+  padding: 0;
   min-height: 100vh;
-
-  @media (max-width: 768px) {
-    padding: ${props => props.$noSidebar ? '0' : '80px 15px 15px'};
-  }
 `;
 
 // Protected Routes Component
 function ProtectedLayout({ children }) {
   const location = useLocation();
-  const noSidebar = location.pathname === '/';
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const noSidebar = location.pathname === '/webcam';
 
   return (
     <AppLayout>
-      <Sidebar />
-      <MainContent $noSidebar={noSidebar}>
+      <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      <MainContent $noSidebar={noSidebar} $isCollapsed={isCollapsed}>
         <ContentWrapper $noSidebar={noSidebar}>
           {children}
         </ContentWrapper>
@@ -65,27 +61,27 @@ function App() {
     <Router basename="/HR">
       <Routes>
         {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        
+        <Route path="/" element={<Login />} />
+
         {/* Protected Routes with Conditional Sidebar */}
-        <Route path="/" element={
+        <Route path="/webcam" element={
           <ProtectedLayout>
             <WebcamCapture />
           </ProtectedLayout>
         } />
-        
+
         <Route path="/register" element={
           <ProtectedLayout>
             <Register />
           </ProtectedLayout>
         } />
-        
+
         <Route path="/Hrregister" element={
           <ProtectedLayout>
             <HRregister />
           </ProtectedLayout>
         } />
-                <Route path="/Finger" element={
+        <Route path="/Finger" element={
           <ProtectedLayout>
             <Fingerprontid />
           </ProtectedLayout>
@@ -95,23 +91,19 @@ function App() {
             <EmployeeHR />
           </ProtectedLayout>
         } />
-        
+
         <Route path="/AttendanceReport" element={
           <ProtectedLayout>
             <AttendanceReport />
           </ProtectedLayout>
         } />
-        
+
         <Route path="/Faceencoding" element={
           <ProtectedLayout>
             <Faceencoding />
           </ProtectedLayout>
         } />
-                <Route path="/AudioUpload" element={
-          <ProtectedLayout>
-            <AudioUpload />
-          </ProtectedLayout>
-        } />
+
         {/* 404 Route */}
         <Route path="*" element={
           <ProtectedLayout>

@@ -335,34 +335,42 @@ const StatusDot = styled.span`
   box-shadow: 0 0 8px ${p => p.active ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)'};
 `;
 
-const ToggleButton = styled.button`
-  padding: 0.5rem 1rem;
-  border: 1px solid ${p => p.variant === 'danger' ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)'};
-  border-radius: var(--radius-sm);
-  background: ${p => p.variant === 'danger' 
-    ? 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.1))' 
-    : 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.1))'};
-  color: ${p => p.variant === 'danger' ? '#fca5a5' : '#6ee7b7'};
-  font-size: 0.85rem;
+const RadioGroup = styled.div`
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+`;
+
+const RadioOption = styled.label`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
+  font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  
+  color: ${props => props.$active ? '#fff' : 'rgba(255, 255, 255, 0.5)'};
+  background: ${props => {
+    if (!props.$active) return 'transparent';
+    return props.$type === 'enable' ? 'var(--success)' : 'var(--danger)';
+  }};
+  opacity: ${props => props.$disabled ? 0.6 : 1};
+  transition: all 0.2s ease;
+  user-select: none;
+  min-width: 80px;
+
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px ${p => p.variant === 'danger' 
-      ? 'rgba(239,68,68,0.25)' 
-      : 'rgba(16,185,129,0.25)'};
+    color: ${props => !props.$active && !props.$disabled && 'rgba(255, 255, 255, 0.8)'};
+    background: ${props => !props.$active && !props.$disabled && 'rgba(255, 255, 255, 0.05)'};
   }
-  
-  &:active {
-    transform: translateY(0);
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+
+  input {
+    display: none;
   }
 `;
 
@@ -460,7 +468,7 @@ export default function EmployeeHR() {
   const [error, setError] = useState(null);
   const [modalImage, setModalImage] = useState(null);
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
-  
+
   // Clear error message after a delay
   useEffect(() => {
     if (error) {
@@ -491,28 +499,28 @@ export default function EmployeeHR() {
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
-  
+
   const updateEmployeeStatus = useCallback((id, newStatus) => {
-    setEmployees(prevEmployees => 
-        prevEmployees.map(emp => 
-            emp.employee_id === id ? { ...emp, is_active: newStatus } : emp
-        )
+    setEmployees(prevEmployees =>
+      prevEmployees.map(emp =>
+        emp.employee_id === id ? { ...emp, is_active: newStatus } : emp
+      )
     );
   }, []);
 
   const handleError = useCallback((err, action) => {
-      const message = err.response?.data?.error 
-          ? `Error ${action}: ${err.response.data.error}`
-          : `An unknown error occurred while trying to ${action}.`;
-      setError(message);
-      console.error(err);
+    const message = err.response?.data?.error
+      ? `Error ${action}: ${err.response.data.error}`
+      : `An unknown error occurred while trying to ${action}.`;
+    setError(message);
+    console.error(err);
   }, []);
 
   const handleEnable = async (employee_id) => {
     try {
       setProcessingId(employee_id);
       setError(null);
-      
+
       await axios.post(
         `${HRbaseurl}employees/${employee_id}/enable_face/`,
         {},
@@ -520,9 +528,9 @@ export default function EmployeeHR() {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      
+
       updateEmployeeStatus(employee_id, true);
-      
+
     } catch (err) {
       handleError(err, "enabling face recognition");
     } finally {
@@ -534,7 +542,7 @@ export default function EmployeeHR() {
     try {
       setProcessingId(employee_id);
       setError(null);
-      
+
       await axios.post(
         `${HRbaseurl}employees/${employee_id}/disable_face/`,
         {},
@@ -542,9 +550,9 @@ export default function EmployeeHR() {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      
+
       updateEmployeeStatus(employee_id, false);
-      
+
     } catch (err) {
       handleError(err, "disabling face recognition");
     } finally {
@@ -554,10 +562,10 @@ export default function EmployeeHR() {
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
-      const matchesSearch = 
+      const matchesSearch =
         emp.employee_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         emp.name?.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "enabled" && emp.is_active) ||
@@ -583,11 +591,11 @@ export default function EmployeeHR() {
             <Title>Employee Management</Title>
             <Subtitle>Manage facial recognition settings for employees</Subtitle>
           </Header>
-          
+
           {error && (
             <ErrorBanner>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{minWidth: '24px'}}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
-                {error}
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ minWidth: '24px' }}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+              {error}
             </ErrorBanner>
           )}
 
@@ -681,23 +689,36 @@ export default function EmployeeHR() {
                         </Badge>
                       </TD>
                       <TD>
-                        {emp.is_active ? (
-                          <ToggleButton
-                            variant="danger"
-                            onClick={() => handleDisable(emp.employee_id)}
-                            disabled={processingId === emp.employee_id}
+                        <RadioGroup>
+                          <RadioOption
+                            $active={emp.is_active}
+                            $type="enable"
+                            $disabled={processingId === emp.employee_id}
                           >
-                            {processingId === emp.employee_id ? "Disabling..." : "Disable"}
-                          </ToggleButton>
-                        ) : (
-                          <ToggleButton
-                            variant="success"
-                            onClick={() => handleEnable(emp.employee_id)}
-                            disabled={processingId === emp.employee_id}
+                            <input
+                              type="radio"
+                              name={`status-${emp.employee_id}`}
+                              checked={emp.is_active}
+                              onChange={() => !emp.is_active && handleEnable(emp.employee_id)}
+                              disabled={processingId === emp.employee_id}
+                            />
+                            {processingId === emp.employee_id && !emp.is_active ? "Enabling..." : "Enable"}
+                          </RadioOption>
+                          <RadioOption
+                            $active={!emp.is_active}
+                            $type="disable"
+                            $disabled={processingId === emp.employee_id}
                           >
-                            {processingId === emp.employee_id ? "Enabling..." : "Enable"}
-                          </ToggleButton>
-                        )}
+                            <input
+                              type="radio"
+                              name={`status-${emp.employee_id}`}
+                              checked={!emp.is_active}
+                              onChange={() => emp.is_active && handleDisable(emp.employee_id)}
+                              disabled={processingId === emp.employee_id}
+                            />
+                            {processingId === emp.employee_id && emp.is_active ? "Disabling..." : "Disable"}
+                          </RadioOption>
+                        </RadioGroup>
                       </TD>
                     </tr>
                   ))}
@@ -720,3 +741,4 @@ export default function EmployeeHR() {
     </>
   );
 }
+

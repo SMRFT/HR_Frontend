@@ -28,9 +28,10 @@ const GlobalStyle = createGlobalStyle`
   html, body, #root { height: 100%; }
   body {
     margin: 0;
-    background: radial-gradient(1200px 800px at -10% -10%, #0ea5e9 0%, transparent 60%),
-                radial-gradient(1400px 900px at 110% 10%, #8b5cf6 0%, transparent 55%),
-                linear-gradient(180deg, var(--bg1), var(--bg2));
+    background:
+      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
+      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -226,7 +227,7 @@ export default function Register() {
   const [facingMode, setFacingMode] = useState("user"); // 'user' | 'environment'
   const mirrored = facingMode === "user";
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
-  
+
   const videoConstraints = useMemo(() => ({
     facingMode,
     width: { ideal: 1280 },

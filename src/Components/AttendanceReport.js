@@ -4,12 +4,12 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { CSVLink } from "react-csv";
 import styled, { createGlobalStyle } from "styled-components";
-import { 
-  Search, 
-  Calendar, 
-  Download, 
-  Users, 
-  Clock, 
+import {
+  Search,
+  Calendar,
+  Download,
+  Users,
+  Clock,
   TrendingUp,
   Filter,
   RefreshCw,
@@ -92,13 +92,20 @@ const GlobalStyle = createGlobalStyle`
 
 // Styled Components (keeping all existing styled components)
 const Page = styled.div`
-  min-height: 100vh;
+  height: 100vh;
   padding: clamp(20px, 4vw, 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 `;
 
 const Container = styled.div`
   max-width: 1600px;
   margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 `;
 
 const Header = styled.div`
@@ -179,7 +186,7 @@ const StatLabel = styled.div`
 
 const StatValue = styled.div`
   color: var(--text);
-  font-size: 28px;
+  font-size: clamp(24px, 4vw, 28px);
   font-weight: 800;
   line-height: 1.2;
 `;
@@ -192,12 +199,23 @@ const Card = styled.div`
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 70%;
+
 `;
 
 const CardHeader = styled.div`
   padding: 24px;
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
+
+  @media (max-width: 640px) {
+    padding: 16px;
+  }
 `;
 
 const CardTitle = styled.h3`
@@ -219,6 +237,7 @@ const Filters = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
+    gap: 16px;
   }
 `;
 
@@ -229,6 +248,7 @@ const SearchWrapper = styled.div`
 
   @media (max-width: 768px) {
     width: 100%;
+    min-width: auto;
   }
 `;
 
@@ -306,8 +326,8 @@ const Button = styled.button`
   height: 44px;
   padding: 0 20px;
   border: 1px solid var(--border);
-  background: ${props => props.$primary 
-    ? 'linear-gradient(135deg, var(--primary), var(--primary-2))' 
+  background: ${props => props.$primary
+    ? 'linear-gradient(135deg, var(--primary), var(--primary-2))'
     : 'rgba(255,255,255,0.05)'};
   color: var(--text);
   font-weight: 600;
@@ -342,8 +362,13 @@ const Button = styled.button`
 `;
 
 const TableWrapper = styled.div`
-  overflow-x: auto;
+  overflow: auto;
   padding: 24px;
+  flex: 1;
+  
+  @media (max-width: 640px) {
+    padding: 0;
+  }
 
   &::-webkit-scrollbar {
     height: 8px;
@@ -362,12 +387,12 @@ const TableWrapper = styled.div`
 const Table = styled.table`
   width: 100%;
   min-width: 1200px;
-  border-collapse: collapse;
+  border-collapse: separate; 
+  border-spacing: 0;
 `;
 
 const THead = styled.thead`
   background: rgba(255,255,255,0.05);
-  border-bottom: 2px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -384,25 +409,35 @@ const TH = styled.th`
   white-space: nowrap;
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(10px);
+  border-bottom: 2px solid var(--border);
   
   &.date-header {
     text-align: center;
     min-width: 90px;
+  }
+
+  &:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 20;
   }
 `;
 
 const TBody = styled.tbody``;
 
 const TR = styled.tr`
-  border-bottom: 1px solid rgba(255,255,255,0.08);
   transition: var(--transition);
   cursor: pointer;
 
   &:hover {
     background: rgba(255,255,255,0.05);
+    
+    td.employee-cell {
+      background: #162032; /* Slightly lighter than bg1 to match hover effect */
+    }
   }
 
-  &:last-child {
+  &:last-child td {
     border-bottom: none;
   }
 `;
@@ -412,25 +447,26 @@ const TD = styled.td`
   color: var(--text);
   font-size: 14px;
   white-space: nowrap;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   
   &.date-cell {
     text-align: center;
     font-size: 12px;
     min-width: 90px;
     background: ${props => {
-      if (props.$status === 'present') return 'rgba(16, 185, 129, 0.1)';
-      if (props.$status === 'late') return 'rgba(245, 158, 11, 0.1)';
-      if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.15)';
-      if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.05)';
-      return 'transparent';
-    }};
+    if (props.$status === 'present') return 'rgba(16, 185, 129, 0.1)';
+    if (props.$status === 'late') return 'rgba(245, 158, 11, 0.1)';
+    if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.15)';
+    if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.05)';
+    return 'transparent';
+  }};
     border: 1px solid ${props => {
-      if (props.$status === 'present') return 'rgba(16, 185, 129, 0.2)';
-      if (props.$status === 'late') return 'rgba(245, 158, 11, 0.2)';
-      if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.3)';
-      if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.1)';
-      return 'transparent';
-    }};
+    if (props.$status === 'present') return 'rgba(16, 185, 129, 0.2)';
+    if (props.$status === 'late') return 'rgba(245, 158, 11, 0.2)';
+    if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.3)';
+    if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.1)';
+    return 'transparent';
+  }};
   }
 
   &.employee-cell {
@@ -439,6 +475,8 @@ const TD = styled.td`
     background: var(--bg1);
     z-index: 5;
     min-width: 200px;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    transition: background-color 0.2s ease;
   }
 `;
 
@@ -451,11 +489,15 @@ const EmployeeInfo = styled.div`
 const EmployeeName = styled.div`
   font-weight: 700;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 const EmployeeMeta = styled.div`
   font-size: 12px;
   color: var(--muted);
+  padding-left: 24px; /* Align with name text */
 `;
 
 const AttendanceCell = styled.div`
@@ -610,7 +652,7 @@ const getDaysInMonth = (date) => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
+
   return Array.from({ length: daysInMonth }, (_, i) => {
     const day = new Date(year, month, i + 1);
     return {
@@ -635,10 +677,10 @@ const calculateWorkHours = (inTime, outTime) => {
   if (!inTime || !outTime) return 0;
   const inDate = new Date(inTime);
   const outDate = new Date(outTime);
-  
+
   // Calculate difference in milliseconds
   let diffMs = outDate - inDate;
-  
+
   // If OUT time is before IN time (negative), it's an overnight shift
   // Example: IN at 21:00, OUT at 06:00 next day
   if (diffMs < 0) {
@@ -646,7 +688,7 @@ const calculateWorkHours = (inTime, outTime) => {
     // by adding 24 hours
     diffMs += (24 * 60 * 60 * 1000);
   }
-  
+
   const diffHours = diffMs / (1000 * 60 * 60);
   return Math.max(0, Math.min(diffHours, 24)); // Cap at 24 hours max
 };
@@ -656,27 +698,27 @@ const getAttendanceStatus = (inTime, outTime, workHours) => {
   const STANDARD_START_TIME = 9; // 8:30 AM
   const HALF_DAY_HOURS = 4;
   const FULL_DAY_HOURS = 8;
-  
+
   // NEW: Single punch detection (only IN or only OUT = Half Day)
   if (inTime && !outTime) {
     return { status: 'Absent', label: 'Absent (No OUT)' };
   }
-  
+
   if (!inTime && outTime) {
     return { status: 'Absent', label: 'Absent (No IN)' };
   }
-  
+
   // No punches at all
   if (!inTime && !outTime) {
     return { status: 'absent', label: 'Absent' };
   }
-  
+
   // Both IN and OUT present - calculate based on hours
   const inDate = new Date(inTime);
   const inHour = inDate.getHours() + inDate.getMinutes() / 60;
-  
+
   const isLate = inHour > STANDARD_START_TIME;
-  
+
   if (workHours < HALF_DAY_HOURS) {
     return { status: 'half-day', label: 'Absent (<4h)' };
   } else if (workHours < FULL_DAY_HOURS) {
@@ -723,7 +765,7 @@ export default function AttendanceReport() {
   // NEW: Enhanced data processing with day lapping and single punch detection
   const processedData = useMemo(() => {
     const employeeMap = new Map();
-    
+
     // First pass: collect all punches
     data.forEach(record => {
       const empId = record.employee_id;
@@ -737,27 +779,27 @@ export default function AttendanceReport() {
           allRecords: []
         });
       }
-      
+
       const employee = employeeMap.get(empId);
       employee.allRecords.push(record);
     });
-    
+
     // Second pass: process shifts with day lapping logic
     employeeMap.forEach((employee) => {
-      const sortedRecords = employee.allRecords.sort((a, b) => 
+      const sortedRecords = employee.allRecords.sort((a, b) =>
         new Date(a.attendence_time) - new Date(b.attendence_time)
       );
-      
+
       let pendingIn = null;
-      
+
       sortedRecords.forEach(record => {
         const recordDate = new Date(record.attendence_time);
         const dateStr = ymd(recordDate);
-        
+
         if (record.attendence_type === 'IN') {
           // Store IN punch, waiting for matching OUT
           pendingIn = record;
-          
+
           // Also ensure this date has an entry
           if (!employee.attendance.has(dateStr)) {
             employee.attendance.set(dateStr, {
@@ -780,7 +822,7 @@ export default function AttendanceReport() {
             const inDate = new Date(pendingIn.attendence_time);
             const outDate = new Date(record.attendence_time);
             const inDateStr = ymd(inDate);
-            
+
             // Assign shift to IN date (even if OUT is next day)
             if (!employee.attendance.has(inDateStr)) {
               employee.attendance.set(inDateStr, {
@@ -795,7 +837,7 @@ export default function AttendanceReport() {
               dayData.out = record.attendence_time;
               dayData.records.push(record);
             }
-            
+
             pendingIn = null;
           } else {
             // OUT without IN (single punch)
@@ -817,7 +859,7 @@ export default function AttendanceReport() {
           }
         }
       });
-      
+
       // Calculate hours and status for each day
       employee.attendance.forEach((dayData) => {
         if (dayData.in && dayData.out) {
@@ -829,13 +871,13 @@ export default function AttendanceReport() {
         }
       });
     });
-    
+
     return Array.from(employeeMap.values());
   }, [data]);
 
   const filteredEmployees = useMemo(() => {
     if (!searchQuery.trim()) return processedData;
-    
+
     const query = searchQuery.toLowerCase();
     return processedData.filter(emp =>
       (emp.employee_id || '').toLowerCase().includes(query) ||
@@ -851,11 +893,11 @@ export default function AttendanceReport() {
     const uniqueEmployees = processedData.length;
     const totalRecords = data.length;
     const totalPresentDays = processedData.reduce((sum, emp) => {
-      return sum + Array.from(emp.attendance.values()).filter(day => 
+      return sum + Array.from(emp.attendance.values()).filter(day =>
         day.status && day.status.status !== 'absent'
       ).length;
     }, 0);
-    const avgAttendance = uniqueEmployees > 0 
+    const avgAttendance = uniqueEmployees > 0
       ? (totalPresentDays / (uniqueEmployees * daysInMonth.length) * 100).toFixed(1)
       : 0;
 
@@ -885,7 +927,7 @@ export default function AttendanceReport() {
       department: emp.department,
       designation: emp.designation
     };
-    
+
     daysInMonth.forEach(day => {
       const dayData = emp.attendance.get(day.dateStr);
       if (dayData && dayData.in && dayData.out) {
@@ -901,7 +943,7 @@ export default function AttendanceReport() {
         row[`day_${day.dayNum}`] = 'Absent';
       }
     });
-    
+
     return row;
   });
 
@@ -925,23 +967,7 @@ export default function AttendanceReport() {
               </div>
             </HeaderTop>
 
-            <StatsGrid>
-              <StatCard>
-                <StatLabel>
-                  <Users size={16} />
-                  Employees
-                </StatLabel>
-                <StatValue>{stats.uniqueEmployees}</StatValue>
-              </StatCard>
 
-              <StatCard>
-                <StatLabel>
-                  <TrendingUp size={16} />
-                  Avg Attendance
-                </StatLabel>
-                <StatValue style={{ color: 'var(--success)' }}>{stats.avgAttendance}%</StatValue>
-              </StatCard>
-            </StatsGrid>
           </Header>
 
           <Card>
@@ -1017,7 +1043,7 @@ export default function AttendanceReport() {
                       <TH>Designation</TH>
                       {daysInMonth.map(day => (
                         <TH key={day.dayNum} className="date-header">
-                          {day.dayNum}<br/>
+                          {day.dayNum}<br />
                           <span style={{ fontSize: '10px', opacity: 0.7 }}>
                             {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
                           </span>
@@ -1033,8 +1059,8 @@ export default function AttendanceReport() {
                             <EmployeeInfo>
                               <EmployeeName>
                                 <ExpandButton as="span">
-                                  {expandedEmployee === emp.employee_id ? 
-                                    <ChevronUp size={16} /> : 
+                                  {expandedEmployee === emp.employee_id ?
+                                    <ChevronUp size={16} /> :
                                     <ChevronDown size={16} />
                                   }
                                 </ExpandButton>
@@ -1048,10 +1074,10 @@ export default function AttendanceReport() {
                           {daysInMonth.map(day => {
                             const dayData = emp.attendance.get(day.dateStr);
                             const statusType = dayData?.status?.status || 'absent';
-                            
+
                             return (
-                              <TD 
-                                key={day.dayNum} 
+                              <TD
+                                key={day.dayNum}
                                 className="date-cell"
                                 $status={statusType}
                               >
