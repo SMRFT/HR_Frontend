@@ -1,15 +1,16 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import './App.css';
 import Login from './Components/Login';
-import Register from './Components/Register';
-import WebcamCapture from './Components/WebcamCapture';
-import HRregister from './Components/HRregister';
-import EmployeeHR from './Components/EmployeeHR';
+import EmployeeRegistration from './Components/EmployeeRegistration';
+import KioskAttendance from './Components/KioskAttendance';
+import DeviceRegistration from './Components/DeviceRegistration';
+import EmployeeManagement from './Components/EmployeeManagement';
 import AttendanceReport from './Components/AttendanceReport';
-import Faceencoding from './Components/Faceencoding';
-import Fingerprontid from './Components/Deviceid';
+import FaceEnrollment from './Components/FaceEnrollment';
+import DeviceIdentifier from './Components/DeviceIdentifier';
+import DailyAttendance from './Components/DailyAttendance';
 import Sidebar from './Components/Sidebar';
 import { useLocation } from 'react-router-dom';
 
@@ -44,6 +45,13 @@ function ProtectedLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const noSidebar = location.pathname === '/webcam';
 
+  // Authentication check
+  const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <AppLayout>
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
@@ -66,29 +74,29 @@ function App() {
         {/* Protected Routes with Conditional Sidebar */}
         <Route path="/webcam" element={
           <ProtectedLayout>
-            <WebcamCapture />
+            <KioskAttendance />
           </ProtectedLayout>
         } />
 
         <Route path="/register" element={
           <ProtectedLayout>
-            <Register />
+            <EmployeeRegistration />
           </ProtectedLayout>
         } />
 
         <Route path="/Hrregister" element={
           <ProtectedLayout>
-            <HRregister />
+            <DeviceRegistration />
           </ProtectedLayout>
         } />
         <Route path="/Finger" element={
           <ProtectedLayout>
-            <Fingerprontid />
+            <DeviceIdentifier />
           </ProtectedLayout>
         } />
         <Route path="/HRAction" element={
           <ProtectedLayout>
-            <EmployeeHR />
+            <EmployeeManagement />
           </ProtectedLayout>
         } />
 
@@ -98,9 +106,15 @@ function App() {
           </ProtectedLayout>
         } />
 
+        <Route path="/daily-attendance" element={
+          <ProtectedLayout>
+            <DailyAttendance />
+          </ProtectedLayout>
+        } />
+
         <Route path="/Faceencoding" element={
           <ProtectedLayout>
-            <Faceencoding />
+            <FaceEnrollment />
           </ProtectedLayout>
         } />
 

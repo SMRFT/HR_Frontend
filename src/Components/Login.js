@@ -254,6 +254,7 @@ const Login = () => {
       localStorage.setItem("device", data.device);
       localStorage.setItem("access_token", data.token);
       localStorage.setItem("name", data.name);
+      localStorage.setItem("role", data.role);
 
       setTimeout(() => navigate("/register"), 1500); // Go to register page
     } catch (err) {
@@ -282,6 +283,7 @@ const Login = () => {
       localStorage.setItem("device", data.device);
       localStorage.setItem("access_token", data.token);
       localStorage.setItem("name", data.name);
+      localStorage.setItem("role", data.role);
       setTimeout(() => navigate("/webcam"), 1500); // Go to home/dashboard
     } catch (err) {
       const msg =

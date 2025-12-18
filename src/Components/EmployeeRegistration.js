@@ -266,7 +266,7 @@ export default function Register() {
         payload,
         { headers: { "Content-Type": "application/json" } }
       );
-      alert(`✅ Registered successfully: ${res.data.name}`);
+      alert(`✅ Registered/Updated successfully: ${res.data.name}`);
       setForm({ employee_id: "", name: "" });
       setImgSrc(null);
     } catch (err) {
@@ -289,7 +289,7 @@ export default function Register() {
       <Container>
         <Card>
           <Header>
-            <Title>Register Employee</Title>
+            <Title>Employee Registration / Face Update</Title>
           </Header>
 
           <Content>
@@ -311,7 +311,7 @@ export default function Register() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </Field>
-              <Chip>Required fields: Employee ID, Name</Chip>
+              <Chip>Enter ID to Register New or Update Existing</Chip>
             </Panel>
 
             <div>
@@ -362,7 +362,7 @@ export default function Register() {
               Reset
             </DangerButton>
             <SuccessButton onClick={handleRegister} disabled={!canSubmit || loading}>
-              {loading ? "Submitting..." : "Register"}
+              {loading ? "Processing..." : "Register / Update"}
             </SuccessButton>
           </Footer>
         </Card>

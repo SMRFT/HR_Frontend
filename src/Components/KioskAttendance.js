@@ -385,6 +385,34 @@ const CountdownText = styled.p`
   text-align: center;
 `;
 
+const TopLeftLogout = styled.button`
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: var(--danger);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  }
+`;
+
 export default function WebcamCapture({ onResult }) {
   const webcamRef = useRef(null);
   const [loading, setLoading] = useState(false);
@@ -393,10 +421,46 @@ export default function WebcamCapture({ onResult }) {
   const [selectedMode, setSelectedMode] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(2);
   const [capturedImage, setCapturedImage] = useState(null);
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
   const navigate = useNavigate();
+
+  const [isAutoCapture, setIsAutoCapture] = useState(true);
+  const isProcessing = useRef(false);
+  const [feedbackMessage, setFeedbackMessage] = useState(null);
+
+  const playSuccessSound = useCallback(() => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      const ctx = new AudioContext();
+
+      const playTone = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0.1, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      const now = ctx.currentTime;
+      // Play a single pleasant "ding"
+      playTone(880, now, 0.6);
+    } catch (err) {
+      console.warn("Audio playback failed", err);
+    }
+  }, []);
 
   const mirrored = facingMode === "user";
   const videoConstraints = useMemo(() => ({
@@ -416,6 +480,17 @@ export default function WebcamCapture({ onResult }) {
     }
   }, [showSuccess, countdown]);
 
+  // Auto-capture interval
+  useEffect(() => {
+    let interval;
+    if (showCamera && isAutoCapture && !loading && !showSuccess) {
+      interval = setInterval(() => {
+        captureAndSend(true);
+      }, 1500);
+    }
+    return () => clearInterval(interval);
+  }, [showCamera, isAutoCapture, loading, showSuccess]);
+
   const handleModeSelection = useCallback((mode) => {
     setSelectedMode(mode);
     setShowCamera(true);
@@ -427,19 +502,24 @@ export default function WebcamCapture({ onResult }) {
     setShowSuccess(false);
     setSelectedMode(null);
     setResult(null);
+    setResult(null);
     setCapturedImage(null);
-    setCountdown(5);
+    setCountdown(2);
+    setFeedbackMessage(null);
   }, []);
 
-  const captureAndSend = useCallback(async () => {
+  const captureAndSend = useCallback(async (isAuto = false) => {
+    if (isProcessing.current) return;
+
     const imageSrc = webcamRef.current?.getScreenshot();
     if (!imageSrc) {
-      toast.error("Failed to capture image");
+      if (!isAuto) toast.error("Failed to capture image", { autoClose: 2000 });
       return;
     }
 
-    setCapturedImage(imageSrc);
-    setLoading(true);
+    isProcessing.current = true;
+    if (!isAuto) setLoading(true);
+    setFeedbackMessage(null); // Clear previous messages
 
     try {
       const token = localStorage.getItem("access_token");
@@ -455,6 +535,10 @@ export default function WebcamCapture({ onResult }) {
       );
       setResult(res.data);
       setShowSuccess(true);
+
+      // Play success sound
+      playSuccessSound();
+
       setShowCamera(false);
 
       // Success toast
@@ -466,13 +550,48 @@ export default function WebcamCapture({ onResult }) {
       onResult && onResult(res.data);
     } catch (err) {
       console.error(err);
+
       const errorMsg = err?.response?.data?.error || "Attendance marking failed";
-      toast.error(errorMsg, { position: "top-center", autoClose: 3000 });
+
+      // Determine if we should show this error
+      // Show Spoofing and User Not Found even in auto mode
+      const isSpoof = errorMsg.includes("Spoofing");
+      const isNotFound = errorMsg.includes("User Not Found");
+      const shouldShow = !isAuto || isSpoof || isNotFound;
+
+      if (shouldShow) {
+        // Show on-camera feedback
+        setFeedbackMessage({ text: errorMsg, type: 'error' });
+
+        // TOAST LOGIC:
+        // 1. Spoofing: Critical, showing it separately so it isn't overwritten by "User Not Found"
+        if (isSpoof) {
+          toast.error(errorMsg, {
+            position: "top-center",
+            autoClose: 4000,
+            toastId: 'spoofing-alert' // Unique ID for spoofing
+          });
+        }
+        // 2. User Not Found / Other Auto errors: Throttled using a fixed ID
+        else {
+          toast.error(errorMsg, {
+            position: "top-center",
+            autoClose: 2000,
+            toastId: 'auto-status-toast' // Constant ID prevents stacking
+          });
+        }
+      }
+
       setCapturedImage(null);
     } finally {
       setLoading(false);
+      isProcessing.current = false;
+      // Clear feedback after 2s if it's an error
+      if (feedbackMessage?.type === 'error') {
+        setTimeout(() => setFeedbackMessage(null), 2000);
+      }
     }
-  }, [selectedMode, onResult, HRbaseurl]);
+  }, [selectedMode, onResult, HRbaseurl, playSuccessSound]);
 
   const fmtTimestamp = (iso) => {
     if (!iso) return "-";
@@ -487,6 +606,8 @@ export default function WebcamCapture({ onResult }) {
   };
 
   const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
     navigate("/");
   };
 
@@ -494,13 +615,13 @@ export default function WebcamCapture({ onResult }) {
     <>
       <GlobalStyle />
       <ToastContainer />
+      <TopLeftLogout onClick={handleLogout} title="Exit / Admin Login">
+        <LogOut size={18} />
+      </TopLeftLogout>
       <Shell>
         <Card>
-          <Header>
+          <Header style={{ justifyContent: 'center' }}>
             <Title>Attendance System</Title>
-            <LogoutButton onClick={handleLogout} title="Logout">
-              <LogOut size={20} />
-            </LogoutButton>
           </Header>
           <Body>
             {!showCamera && !showSuccess ? (
@@ -573,9 +694,19 @@ export default function WebcamCapture({ onResult }) {
                   <BackButton onClick={handleReset}>
                     ← Back
                   </BackButton>
-                  <ModeIndicator $mode={selectedMode}>
-                    {selectedMode === "IN" ? "Check IN" : "Check OUT"}
-                  </ModeIndicator>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <ModeIndicator $mode={selectedMode}>
+                      {selectedMode === "IN" ? "Check IN" : "Check OUT"}
+                    </ModeIndicator>
+                    <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={isAutoCapture}
+                        onChange={(e) => setIsAutoCapture(e.target.checked)}
+                      />
+                      Auto
+                    </label>
+                  </div>
                 </Row>
 
                 <CameraWrap>
@@ -591,13 +722,61 @@ export default function WebcamCapture({ onResult }) {
                     />
                   </WebcamBox>
                   <Overlay />
+                  {/* Status Overlay */}
+                  {feedbackMessage && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, 50%)',
+                      background: feedbackMessage.type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(16, 185, 129, 0.9)',
+                      color: 'white',
+                      padding: '12px 24px',
+                      borderRadius: '12px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      textAlign: 'center',
+                      backdropFilter: 'blur(4px)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                      zIndex: 10,
+                      maxWidth: '80%'
+                    }}>
+                      {feedbackMessage.text}
+                    </div>
+                  )}
+
+                  {isAutoCapture && !loading && !feedbackMessage && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '10px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(0,0,0,0.6)',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <div className="pulse-dot" style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: '#22d3ee',
+                        boxShadow: '0 0 8px #22d3ee'
+                      }} />
+                      Scanning...
+                    </div>
+                  )}
                 </CameraWrap>
                 <Row>
                   <Hint>Position your face in the center</Hint>
                 </Row>
 
                 <Controls>
-                  <Button onClick={captureAndSend} disabled={loading}>
+                  <Button onClick={() => captureAndSend(false)} disabled={loading}>
                     {loading ? "Processing..." : `Capture & Submit`}
                   </Button>
                 </Controls>

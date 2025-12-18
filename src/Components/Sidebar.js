@@ -15,7 +15,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Camera,
+  Clock
 } from 'lucide-react';
 
 // Global Styles
@@ -456,18 +458,20 @@ const menuItems = [
     items: [
       { path: '/register', icon: UserPlus, label: 'Register Employee' },
       { path: '/HRAction', icon: Users, label: 'All Employees' },
-      { path: '/Faceencoding', icon: ScanFace, label: 'Face Encoding' },
+      // { path: '/Faceencoding', icon: ScanFace, label: 'Face Encoding' },
     ]
   },
   {
     section: 'Analytics',
     items: [
+      { path: '/daily-attendance', icon: Clock, label: "Today's Status" },
       { path: '/AttendanceReport', icon: FileBarChart, label: 'Attendance Report' },
     ]
   },
   {
     section: 'System',
     items: [
+      { path: '/webcam', icon: Camera, label: 'Kiosk Mode' },
       { path: '/Hrregister', icon: MonitorSmartphone, label: 'Device Registration' },
     ]
   }
@@ -479,6 +483,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [activeTooltip, setActiveTooltip] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Get user info from localStorage
+  const userName = localStorage.getItem('name') || 'User';
+  const userRole = localStorage.getItem('role') || 'Guest';
 
   // Hide sidebar for Face Recognition page
   const shouldHideSidebar = location.pathname === '/webcam';
@@ -543,7 +551,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <LayoutGrid size={24} color="white" />
             </LogoIcon>
             <LogoText $isCollapsed={isCollapsed}>
-              <CompanyName>HR Portal</CompanyName>
+              <CompanyName>Shinova HR</CompanyName>
               <CompanyTagline>Admin Dashboard</CompanyTagline>
             </LogoText>
           </LogoSection>
@@ -580,11 +588,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         <SidebarFooter>
           <UserSection>
             <UserAvatar>
-              HR
+              {userName.charAt(0).toUpperCase()}
             </UserAvatar>
             <UserInfo $isCollapsed={isCollapsed}>
-              <UserName>HR Admin</UserName>
-              <UserRole>Administrator</UserRole>
+              <UserName>{userName}</UserName>
+              <UserRole>{userRole}</UserRole>
             </UserInfo>
           </UserSection>
 

@@ -92,20 +92,13 @@ const GlobalStyle = createGlobalStyle`
 
 // Styled Components (keeping all existing styled components)
 const Page = styled.div`
-  height: 100vh;
+  min-height: 100vh;
   padding: clamp(20px, 4vw, 40px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 `;
 
 const Container = styled.div`
-  max-width: 1600px;
+  max-width: 1100px;
   margin: 0 auto;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
 `;
 
 const Header = styled.div`
@@ -186,7 +179,7 @@ const StatLabel = styled.div`
 
 const StatValue = styled.div`
   color: var(--text);
-  font-size: clamp(24px, 4vw, 28px);
+  font-size: 28px;
   font-weight: 800;
   line-height: 1.2;
 `;
@@ -199,23 +192,12 @@ const Card = styled.div`
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-  width: 70%;
-
 `;
 
 const CardHeader = styled.div`
   padding: 24px;
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
-
-  @media (max-width: 640px) {
-    padding: 16px;
-  }
 `;
 
 const CardTitle = styled.h3`
@@ -237,7 +219,6 @@ const Filters = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
   }
 `;
 
@@ -248,7 +229,6 @@ const SearchWrapper = styled.div`
 
   @media (max-width: 768px) {
     width: 100%;
-    min-width: auto;
   }
 `;
 
@@ -362,13 +342,8 @@ const Button = styled.button`
 `;
 
 const TableWrapper = styled.div`
-  overflow: auto;
+  overflow-x: auto;
   padding: 24px;
-  flex: 1;
-  
-  @media (max-width: 640px) {
-    padding: 0;
-  }
 
   &::-webkit-scrollbar {
     height: 8px;
@@ -387,12 +362,12 @@ const TableWrapper = styled.div`
 const Table = styled.table`
   width: 100%;
   min-width: 1200px;
-  border-collapse: separate; 
-  border-spacing: 0;
+  border-collapse: collapse;
 `;
 
 const THead = styled.thead`
   background: rgba(255,255,255,0.05);
+  border-bottom: 2px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -409,35 +384,25 @@ const TH = styled.th`
   white-space: nowrap;
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(10px);
-  border-bottom: 2px solid var(--border);
   
   &.date-header {
     text-align: center;
     min-width: 90px;
-  }
-
-  &:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 20;
   }
 `;
 
 const TBody = styled.tbody``;
 
 const TR = styled.tr`
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   transition: var(--transition);
   cursor: pointer;
 
   &:hover {
     background: rgba(255,255,255,0.05);
-    
-    td.employee-cell {
-      background: #162032; /* Slightly lighter than bg1 to match hover effect */
-    }
   }
 
-  &:last-child td {
+  &:last-child {
     border-bottom: none;
   }
 `;
@@ -447,7 +412,6 @@ const TD = styled.td`
   color: var(--text);
   font-size: 14px;
   white-space: nowrap;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
   
   &.date-cell {
     text-align: center;
@@ -475,8 +439,6 @@ const TD = styled.td`
     background: var(--bg1);
     z-index: 5;
     min-width: 200px;
-    border-right: 1px solid rgba(255,255,255,0.1);
-    transition: background-color 0.2s ease;
   }
 `;
 
@@ -489,15 +451,11 @@ const EmployeeInfo = styled.div`
 const EmployeeName = styled.div`
   font-weight: 700;
   color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
 `;
 
 const EmployeeMeta = styled.div`
   font-size: 12px;
   color: var(--muted);
-  padding-left: 24px; /* Align with name text */
 `;
 
 const AttendanceCell = styled.div`
@@ -917,7 +875,8 @@ export default function AttendanceReport() {
     ...daysInMonth.map(day => ({
       label: `${day.dayNum}`,
       key: `day_${day.dayNum}`
-    }))
+    })),
+    { label: "Total Working Hours", key: "total_working_hours" }
   ];
 
   const csvData = filteredEmployees.map(emp => {
@@ -928,14 +887,18 @@ export default function AttendanceReport() {
       designation: emp.designation
     };
 
+    let totalMonthHours = 0;
+
     daysInMonth.forEach(day => {
       const dayData = emp.attendance.get(day.dateStr);
       if (dayData && dayData.in && dayData.out) {
         const inTime = fmtTime(dayData.in);
         const outTime = fmtTime(dayData.out);
-        const hours = dayData.workHours.toFixed(1);
+        const hours = dayData.workHours;
+        totalMonthHours += hours;
+
         const status = dayData.status?.label || '';
-        row[`day_${day.dayNum}`] = `${inTime}-${outTime} (${hours}h) ${status}`;
+        row[`day_${day.dayNum}`] = `${inTime}-${outTime} (${hours.toFixed(1)}h) ${status}`;
       } else if (dayData && (dayData.in || dayData.out)) {
         const time = dayData.in ? `IN: ${fmtTime(dayData.in)}` : `OUT: ${fmtTime(dayData.out)}`;
         row[`day_${day.dayNum}`] = `${time} - ${dayData.status?.label || 'Half Day'}`;
@@ -943,6 +906,8 @@ export default function AttendanceReport() {
         row[`day_${day.dayNum}`] = 'Absent';
       }
     });
+
+    row['total_working_hours'] = totalMonthHours.toFixed(2);
 
     return row;
   });
@@ -967,7 +932,23 @@ export default function AttendanceReport() {
               </div>
             </HeaderTop>
 
+            <StatsGrid>
+              <StatCard>
+                <StatLabel>
+                  <Users size={16} />
+                  Employees
+                </StatLabel>
+                <StatValue>{stats.uniqueEmployees}</StatValue>
+              </StatCard>
 
+              <StatCard>
+                <StatLabel>
+                  <TrendingUp size={16} />
+                  Avg Attendance
+                </StatLabel>
+                <StatValue style={{ color: 'var(--success)' }}>{stats.avgAttendance}%</StatValue>
+              </StatCard>
+            </StatsGrid>
           </Header>
 
           <Card>

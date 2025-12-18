@@ -503,15 +503,17 @@ const Register = () => {
 
                 <FormGroup>
                   <Label htmlFor="device">Device Name</Label>
-                  <Input
+                  <Select
                     id="device"
-                    type="text"
                     name="device"
-                    placeholder="Eg: HR Office PC"
                     value={formData.device}
                     onChange={handleChange}
                     required
-                  />
+                  >
+                    <option value="" disabled>Select Device</option>
+                    <option value="Master_Health_Checkup_001">Master_Health_Checkup_001</option>
+                    <option value="HR_Office_PC_001">HR_Office_PC_001</option>
+                  </Select>
                 </FormGroup>
 
                 <FormGroup>
