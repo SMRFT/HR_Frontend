@@ -4,18 +4,20 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { CSVLink } from "react-csv";
 import styled, { createGlobalStyle } from "styled-components";
-import { 
-  Search, 
-  Calendar, 
-  Download, 
-  Users, 
-  Clock, 
+import {
+  Search,
+  Calendar,
+  Download,
+  Users,
+  Clock,
   TrendingUp,
   Filter,
   RefreshCw,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileText
 } from "lucide-react";
+
 
 // Global Styles (keeping existing styles)
 const GlobalStyle = createGlobalStyle`
@@ -52,9 +54,11 @@ const GlobalStyle = createGlobalStyle`
     -moz-osx-font-smoothing: grayscale;
   }
 
+
   .react-datepicker-wrapper {
     width: 100%;
   }
+
 
   .react-datepicker {
     font-family: inherit;
@@ -64,19 +68,23 @@ const GlobalStyle = createGlobalStyle`
     box-shadow: var(--shadow);
   }
 
+
   .react-datepicker__header {
     background: var(--glass);
     border-bottom: 1px solid var(--border);
   }
+
 
   .react-datepicker__current-month,
   .react-datepicker__day-name {
     color: var(--text);
   }
 
+
   .react-datepicker__day {
     color: var(--muted);
   }
+
 
   .react-datepicker__day--selected,
   .react-datepicker__day--keyboard-selected {
@@ -84,11 +92,13 @@ const GlobalStyle = createGlobalStyle`
     color: white;
   }
 
+
   .react-datepicker__day:hover {
     background: var(--primary-2);
     color: white;
   }
 `;
+
 
 // Styled Components (keeping all existing styled components)
 const Page = styled.div`
@@ -96,14 +106,17 @@ const Page = styled.div`
   padding: clamp(20px, 4vw, 40px);
 `;
 
+
 const Container = styled.div`
-  max-width: 1600px;
+  max-width: 1100px;
   margin: 0 auto;
 `;
+
 
 const Header = styled.div`
   margin-bottom: 32px;
 `;
+
 
 const HeaderTop = styled.div`
   display: flex;
@@ -113,11 +126,13 @@ const HeaderTop = styled.div`
   gap: 20px;
   flex-wrap: wrap;
 
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
   }
 `;
+
 
 const Title = styled.h1`
   margin: 0;
@@ -132,11 +147,13 @@ const Title = styled.h1`
   gap: 12px;
 `;
 
+
 const Subtitle = styled.p`
   margin: 8px 0 0 0;
   color: var(--muted);
   font-size: 14px;
 `;
+
 
 const StatsGrid = styled.div`
   display: grid;
@@ -144,10 +161,12 @@ const StatsGrid = styled.div`
   gap: 20px;
   margin-bottom: 28px;
 
+
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
   }
 `;
+
 
 const StatCard = styled.div`
   background: var(--glass);
@@ -159,11 +178,13 @@ const StatCard = styled.div`
   box-shadow: var(--shadow);
   transition: var(--transition);
 
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 20px 40px rgba(0,0,0,0.4);
   }
 `;
+
 
 const StatLabel = styled.div`
   color: var(--muted);
@@ -177,12 +198,14 @@ const StatLabel = styled.div`
   gap: 8px;
 `;
 
+
 const StatValue = styled.div`
   color: var(--text);
   font-size: 28px;
   font-weight: 800;
   line-height: 1.2;
 `;
+
 
 const Card = styled.div`
   background: var(--glass);
@@ -194,11 +217,13 @@ const Card = styled.div`
   overflow: hidden;
 `;
 
+
 const CardHeader = styled.div`
   padding: 24px;
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
 `;
+
 
 const CardTitle = styled.h3`
   margin: 0 0 20px 0;
@@ -210,11 +235,13 @@ const CardTitle = styled.h3`
   gap: 10px;
 `;
 
+
 const Filters = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
+
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -222,15 +249,18 @@ const Filters = styled.div`
   }
 `;
 
+
 const SearchWrapper = styled.div`
   position: relative;
   flex: 1;
   min-width: 250px;
 
+
   @media (max-width: 768px) {
     width: 100%;
   }
 `;
+
 
 const SearchInput = styled.input`
   width: 100%;
@@ -243,9 +273,11 @@ const SearchInput = styled.input`
   font-size: 14px;
   transition: var(--transition);
 
+
   &::placeholder {
     color: var(--muted);
   }
+
 
   &:focus {
     outline: none;
@@ -255,6 +287,7 @@ const SearchInput = styled.input`
   }
 `;
 
+
 const SearchIcon = styled.div`
   position: absolute;
   left: 14px;
@@ -263,6 +296,7 @@ const SearchIcon = styled.div`
   color: var(--muted);
   pointer-events: none;
 `;
+
 
 const DatePickerWrapper = styled.div`
   position: relative;
@@ -276,9 +310,11 @@ const DatePickerWrapper = styled.div`
   min-width: 200px;
   transition: var(--transition);
 
+
   &:hover {
     border-color: var(--primary);
   }
+
 
   input {
     width: 100%;
@@ -288,26 +324,30 @@ const DatePickerWrapper = styled.div`
     font-size: 14px;
     cursor: pointer;
 
+
     &:focus {
       outline: none;
     }
+
 
     &::placeholder {
       color: var(--muted);
     }
   }
 
+
   @media (max-width: 768px) {
     width: 100%;
   }
 `;
 
+
 const Button = styled.button`
   height: 44px;
   padding: 0 20px;
   border: 1px solid var(--border);
-  background: ${props => props.$primary 
-    ? 'linear-gradient(135deg, var(--primary), var(--primary-2))' 
+  background: ${props => props.$primary
+    ? 'linear-gradient(135deg, var(--primary), var(--primary-2))'
     : 'rgba(255,255,255,0.05)'};
   color: var(--text);
   font-weight: 600;
@@ -320,14 +360,17 @@ const Button = styled.button`
   gap: 8px;
   white-space: nowrap;
 
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(99,102,241,0.3);
   }
 
+
   &:active {
     transform: translateY(0);
   }
+
 
   &:disabled {
     opacity: 0.5;
@@ -335,35 +378,42 @@ const Button = styled.button`
     transform: none;
   }
 
+
   @media (max-width: 768px) {
     width: 100%;
     justify-content: center;
   }
 `;
 
+
 const TableWrapper = styled.div`
   overflow-x: auto;
   padding: 24px;
 
+
   &::-webkit-scrollbar {
     height: 8px;
   }
+
 
   &::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.2);
     border-radius: 4px;
   }
 
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
 `;
+
 
 const Table = styled.table`
   width: 100%;
   min-width: 1200px;
   border-collapse: collapse;
 `;
+
 
 const THead = styled.thead`
   background: rgba(255,255,255,0.05);
@@ -372,6 +422,7 @@ const THead = styled.thead`
   top: 0;
   z-index: 10;
 `;
+
 
 const TH = styled.th`
   padding: 12px 16px;
@@ -391,21 +442,26 @@ const TH = styled.th`
   }
 `;
 
+
 const TBody = styled.tbody``;
+
 
 const TR = styled.tr`
   border-bottom: 1px solid rgba(255,255,255,0.08);
   transition: var(--transition);
   cursor: pointer;
 
+
   &:hover {
     background: rgba(255,255,255,0.05);
   }
+
 
   &:last-child {
     border-bottom: none;
   }
 `;
+
 
 const TD = styled.td`
   padding: 14px 16px;
@@ -418,20 +474,21 @@ const TD = styled.td`
     font-size: 12px;
     min-width: 90px;
     background: ${props => {
-      if (props.$status === 'present') return 'rgba(16, 185, 129, 0.1)';
-      if (props.$status === 'late') return 'rgba(245, 158, 11, 0.1)';
-      if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.15)';
-      if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.05)';
-      return 'transparent';
-    }};
+    if (props.$status === 'present') return 'rgba(16, 185, 129, 0.1)';
+    if (props.$status === 'late') return 'rgba(245, 158, 11, 0.1)';
+    if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.15)';
+    if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.05)';
+    return 'transparent';
+  }};
     border: 1px solid ${props => {
-      if (props.$status === 'present') return 'rgba(16, 185, 129, 0.2)';
-      if (props.$status === 'late') return 'rgba(245, 158, 11, 0.2)';
-      if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.3)';
-      if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.1)';
-      return 'transparent';
-    }};
+    if (props.$status === 'present') return 'rgba(16, 185, 129, 0.2)';
+    if (props.$status === 'late') return 'rgba(245, 158, 11, 0.2)';
+    if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.3)';
+    if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.1)';
+    return 'transparent';
+  }};
   }
+
 
   &.employee-cell {
     position: sticky;
@@ -442,21 +499,25 @@ const TD = styled.td`
   }
 `;
 
+
 const EmployeeInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
 `;
 
+
 const EmployeeName = styled.div`
   font-weight: 700;
   color: var(--text);
 `;
 
+
 const EmployeeMeta = styled.div`
   font-size: 12px;
   color: var(--muted);
 `;
+
 
 const AttendanceCell = styled.div`
   display: flex;
@@ -464,6 +525,7 @@ const AttendanceCell = styled.div`
   align-items: center;
   gap: 4px;
 `;
+
 
 const TimeLabel = styled.span`
   font-size: 10px;
@@ -474,6 +536,7 @@ const TimeLabel = styled.span`
   color: ${props => props.$type === 'IN' ? 'var(--success)' : 'var(--primary)'};
   background: ${props => props.$type === 'IN' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(99, 102, 241, 0.12)'};
 `;
+
 
 const HoursLabel = styled.div`
   font-size: 12px;
@@ -500,6 +563,7 @@ const HoursLabel = styled.div`
     return 'rgba(239, 68, 68, 0.3)';
   }};
 `;
+
 
 const StatusLabel = styled.div`
   font-size: 9px;
@@ -532,6 +596,7 @@ const StatusLabel = styled.div`
   }};
 `;
 
+
 const ExpandButton = styled.button`
   background: none;
   border: none;
@@ -542,14 +607,17 @@ const ExpandButton = styled.button`
   align-items: center;
   transition: var(--transition);
 
+
   &:hover {
     color: var(--primary);
   }
 `;
 
+
 const DetailRow = styled.tr`
   background: rgba(255,255,255,0.02);
 `;
+
 
 const DetailCell = styled.td`
   padding: 12px 16px !important;
@@ -557,17 +625,20 @@ const DetailCell = styled.td`
   color: var(--muted);
 `;
 
+
 const EmptyState = styled.div`
   padding: 80px 20px;
   text-align: center;
   color: var(--muted);
 `;
 
+
 const EmptyIcon = styled.div`
   font-size: 64px;
   margin-bottom: 16px;
   opacity: 0.5;
 `;
+
 
 const LoadingSpinner = styled.div`
   display: inline-block;
@@ -578,16 +649,46 @@ const LoadingSpinner = styled.div`
   border-top-color: var(--primary);
   animation: spin 0.8s linear infinite;
 
+
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
 `;
+
 
 const LoadingContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 80px;
+`;
+
+
+const FilterSelect = styled.select`
+  height: 44px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
+
+  &:hover, &:focus {
+    border-color: var(--primary);
+    background: rgba(255,255,255,0.08);
+  }
+
+  option {
+    background: var(--bg2);
+    color: var(--text);
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 // Helper Functions
@@ -598,6 +699,7 @@ const ymd = (d) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+
 const monthRange = (d) => {
   const start = new Date(d.getFullYear(), d.getMonth(), 1);
   const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
@@ -606,11 +708,13 @@ const monthRange = (d) => {
   return { start, end };
 };
 
+
 const getDaysInMonth = (date) => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
+
+
   return Array.from({ length: daysInMonth }, (_, i) => {
     const day = new Date(year, month, i + 1);
     return {
@@ -621,6 +725,7 @@ const getDaysInMonth = (date) => {
   });
 };
 
+
 const fmtTime = (dateStr) => {
   const d = new Date(dateStr);
   return d.toLocaleTimeString('en-US', {
@@ -630,15 +735,18 @@ const fmtTime = (dateStr) => {
   });
 };
 
+
 // NEW: Calculate work hours with day lapping support
 const calculateWorkHours = (inTime, outTime) => {
   if (!inTime || !outTime) return 0;
   const inDate = new Date(inTime);
   const outDate = new Date(outTime);
-  
+
+
   // Calculate difference in milliseconds
   let diffMs = outDate - inDate;
-  
+
+
   // If OUT time is before IN time (negative), it's an overnight shift
   // Example: IN at 21:00, OUT at 06:00 next day
   if (diffMs < 0) {
@@ -646,37 +754,45 @@ const calculateWorkHours = (inTime, outTime) => {
     // by adding 24 hours
     diffMs += (24 * 60 * 60 * 1000);
   }
-  
+
+
   const diffHours = diffMs / (1000 * 60 * 60);
   return Math.max(0, Math.min(diffHours, 24)); // Cap at 24 hours max
 };
+
 
 // NEW: Enhanced status calculation with single punch detection
 const getAttendanceStatus = (inTime, outTime, workHours) => {
   const STANDARD_START_TIME = 9; // 8:30 AM
   const HALF_DAY_HOURS = 4;
   const FULL_DAY_HOURS = 8;
-  
+
+
   // NEW: Single punch detection (only IN or only OUT = Half Day)
   if (inTime && !outTime) {
     return { status: 'Absent', label: 'Absent (No OUT)' };
   }
-  
+
+
   if (!inTime && outTime) {
     return { status: 'Absent', label: 'Absent (No IN)' };
   }
-  
+
+
   // No punches at all
   if (!inTime && !outTime) {
     return { status: 'absent', label: 'Absent' };
   }
-  
+
+
   // Both IN and OUT present - calculate based on hours
   const inDate = new Date(inTime);
   const inHour = inDate.getHours() + inDate.getMinutes() / 60;
-  
+
+
   const isLate = inHour > STANDARD_START_TIME;
-  
+
+
   if (workHours < HALF_DAY_HOURS) {
     return { status: 'half-day', label: 'Absent (<4h)' };
   } else if (workHours < FULL_DAY_HOURS) {
@@ -685,6 +801,7 @@ const getAttendanceStatus = (inTime, outTime, workHours) => {
     return { status: isLate ? 'late' : 'present', label: isLate ? 'Late' : 'Present' };
   }
 };
+
 
 // Main Component
 export default function AttendanceReport() {
@@ -698,18 +815,25 @@ export default function AttendanceReport() {
     fetchData();
   }, [month]);
 
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const { start, end } = monthRange(month);
+      const role = localStorage.getItem('role');
+      const dept = localStorage.getItem('department');
+      const params = {
+        from_date: ymd(start),
+        to_date: ymd(end),
+      };
+
+      if (role && role !== 'Admin' && dept) {
+        params.department = dept;
+      }
+
       const res = await axios.get(
         `${HRbaseurl}attendance-report/`,
-        {
-          params: {
-            from_date: ymd(start),
-            to_date: ymd(end),
-          },
-        }
+        { params }
       );
       setData(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
@@ -720,10 +844,12 @@ export default function AttendanceReport() {
     }
   };
 
+
   // NEW: Enhanced data processing with day lapping and single punch detection
   const processedData = useMemo(() => {
     const employeeMap = new Map();
-    
+
+
     // First pass: collect all punches
     data.forEach(record => {
       const empId = record.employee_id;
@@ -737,27 +863,33 @@ export default function AttendanceReport() {
           allRecords: []
         });
       }
-      
+
+
       const employee = employeeMap.get(empId);
       employee.allRecords.push(record);
     });
-    
+
+
     // Second pass: process shifts with day lapping logic
     employeeMap.forEach((employee) => {
-      const sortedRecords = employee.allRecords.sort((a, b) => 
+      const sortedRecords = employee.allRecords.sort((a, b) =>
         new Date(a.attendence_time) - new Date(b.attendence_time)
       );
-      
+
+
       let pendingIn = null;
-      
+
+
       sortedRecords.forEach(record => {
         const recordDate = new Date(record.attendence_time);
         const dateStr = ymd(recordDate);
-        
+
+
         if (record.attendence_type === 'IN') {
           // Store IN punch, waiting for matching OUT
           pendingIn = record;
-          
+
+
           // Also ensure this date has an entry
           if (!employee.attendance.has(dateStr)) {
             employee.attendance.set(dateStr, {
@@ -780,7 +912,8 @@ export default function AttendanceReport() {
             const inDate = new Date(pendingIn.attendence_time);
             const outDate = new Date(record.attendence_time);
             const inDateStr = ymd(inDate);
-            
+
+
             // Assign shift to IN date (even if OUT is next day)
             if (!employee.attendance.has(inDateStr)) {
               employee.attendance.set(inDateStr, {
@@ -795,7 +928,8 @@ export default function AttendanceReport() {
               dayData.out = record.attendence_time;
               dayData.records.push(record);
             }
-            
+
+
             pendingIn = null;
           } else {
             // OUT without IN (single punch)
@@ -817,7 +951,8 @@ export default function AttendanceReport() {
           }
         }
       });
-      
+
+
       // Calculate hours and status for each day
       employee.attendance.forEach((dayData) => {
         if (dayData.in && dayData.out) {
@@ -829,35 +964,56 @@ export default function AttendanceReport() {
         }
       });
     });
-    
+
+
     return Array.from(employeeMap.values());
   }, [data]);
 
+  // Derived Departments List for Filter
+  const departments = useMemo(() => {
+    const depts = new Set(processedData.map(p => p.department).filter(Boolean));
+    return Array.from(depts).sort();
+  }, [processedData]);
+
+  const [departmentFilter, setDepartmentFilter] = useState('All');
+
   const filteredEmployees = useMemo(() => {
-    if (!searchQuery.trim()) return processedData;
-    
-    const query = searchQuery.toLowerCase();
-    return processedData.filter(emp =>
-      (emp.employee_id || '').toLowerCase().includes(query) ||
-      (emp.employee_name || '').toLowerCase().includes(query) ||
-      (emp.department || '').toLowerCase().includes(query) ||
-      (emp.designation || '').toLowerCase().includes(query)
-    );
-  }, [processedData, searchQuery]);
+    let result = processedData;
+
+    // 1. Filter by Department
+    if (departmentFilter !== 'All') {
+      result = result.filter(emp => emp.department === departmentFilter);
+    }
+
+    // 2. Filter by Search Query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(emp =>
+        (emp.employee_id || '').toLowerCase().includes(query) ||
+        (emp.employee_name || '').toLowerCase().includes(query) ||
+        (emp.department || '').toLowerCase().includes(query) ||
+        (emp.designation || '').toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [processedData, searchQuery, departmentFilter]);
 
   const daysInMonth = useMemo(() => getDaysInMonth(month), [month]);
+
 
   const stats = useMemo(() => {
     const uniqueEmployees = processedData.length;
     const totalRecords = data.length;
     const totalPresentDays = processedData.reduce((sum, emp) => {
-      return sum + Array.from(emp.attendance.values()).filter(day => 
+      return sum + Array.from(emp.attendance.values()).filter(day =>
         day.status && day.status.status !== 'absent'
       ).length;
     }, 0);
-    const avgAttendance = uniqueEmployees > 0 
+    const avgAttendance = uniqueEmployees > 0
       ? (totalPresentDays / (uniqueEmployees * daysInMonth.length) * 100).toFixed(1)
       : 0;
+
 
     return {
       uniqueEmployees,
@@ -867,47 +1023,119 @@ export default function AttendanceReport() {
     };
   }, [processedData, data, daysInMonth]);
 
-  const csvHeaders = [
-    { label: "Employee ID", key: "employee_id" },
-    { label: "Employee Name", key: "employee_name" },
-    { label: "Department", key: "department" },
-    { label: "Designation", key: "designation" },
-    ...daysInMonth.map(day => ({
-      label: `${day.dayNum}`,
-      key: `day_${day.dayNum}`
-    }))
-  ];
+  // const toggleExpand = (empId) => {
+  //   setExpandedEmployee(prev => prev === empId ? null : empId);
+  // };
 
-  const csvData = filteredEmployees.map(emp => {
-    const row = {
-      employee_id: emp.employee_id,
-      employee_name: emp.employee_name,
-      department: emp.department,
-      designation: emp.designation
-    };
-    
-    daysInMonth.forEach(day => {
-      const dayData = emp.attendance.get(day.dateStr);
-      if (dayData && dayData.in && dayData.out) {
-        const inTime = fmtTime(dayData.in);
-        const outTime = fmtTime(dayData.out);
-        const hours = dayData.workHours.toFixed(1);
-        const status = dayData.status?.label || '';
-        row[`day_${day.dayNum}`] = `${inTime}-${outTime} (${hours}h) ${status}`;
-      } else if (dayData && (dayData.in || dayData.out)) {
-        const time = dayData.in ? `IN: ${fmtTime(dayData.in)}` : `OUT: ${fmtTime(dayData.out)}`;
-        row[`day_${day.dayNum}`] = `${time} - ${dayData.status?.label || 'Half Day'}`;
-      } else {
-        row[`day_${day.dayNum}`] = 'Absent';
-      }
+  // CSV Generation with two header rows for grouped columns
+  const csvData = useMemo(() => {
+    // Header Row 1: Grouped Headers
+    const headerRow1 = [
+      "Employee Name",
+      "Department",
+      ...daysInMonth.flatMap(day => [
+        day.dateStr,
+        "", // Placeholder for 'Out' column under the same date
+        ""  // Placeholder for 'Total' column under the same date
+      ])
+    ];
+
+    // Header Row 2: Sub-headers
+    const headerRow2 = [
+      "", // Under Name
+      "", // Under Department
+      ...daysInMonth.flatMap(() => [
+        "In",
+        "Out",
+        "Total"
+      ])
+    ];
+
+    // Data Rows
+    const rows = filteredEmployees.map(emp => {
+      const rowData = [
+        emp.employee_name,
+        emp.department
+      ];
+
+      daysInMonth.forEach(day => {
+        const dayData = emp.attendance.get(day.dateStr);
+        let inTime = '-';
+        let outTime = '-';
+        let dailyTotal = '-';
+
+        if (dayData) {
+          if (dayData.in) inTime = fmtTime(dayData.in);
+          if (dayData.out) outTime = fmtTime(dayData.out);
+
+          if (dayData.workHours > 0) {
+            // Total working hours
+            dailyTotal = dayData.workHours.toFixed(2);
+          } else if (dayData.status?.status === 'absent') {
+            dailyTotal = '0.00';
+          } else {
+            dailyTotal = '0.00';
+          }
+        } else {
+          dailyTotal = '0.00';
+        }
+
+        rowData.push(inTime, outTime, dailyTotal);
+      });
+
+      return rowData;
     });
-    
-    return row;
-  });
+
+    return [headerRow1, headerRow2, ...rows];
+  }, [filteredEmployees, daysInMonth]);
+
+
+  // CSV Generation: Status Only
+  const csvStatusOnlyData = useMemo(() => {
+    // Header Row
+    const headerRow = [
+      "Employee ID",
+      "Employee Name",
+      "Department",
+      "Designation",
+      ...daysInMonth.map(day => day.dateStr)
+    ];
+
+
+    // Data Rows
+    const rows = filteredEmployees.map(emp => {
+      const rowData = [
+        emp.employee_id,
+        emp.employee_name,
+        emp.department,
+        emp.designation
+      ];
+
+
+      daysInMonth.forEach(day => {
+        const dayData = emp.attendance.get(day.dateStr);
+        let status = 'Absent';
+
+
+        if (dayData && (dayData.in || dayData.out)) {
+          status = 'Present';
+        }
+        rowData.push(status);
+      });
+
+
+      return rowData;
+    });
+
+
+    return [headerRow, ...rows];
+  }, [filteredEmployees, daysInMonth]);
+
 
   const toggleExpand = (empId) => {
     setExpandedEmployee(expandedEmployee === empId ? null : empId);
   };
+
 
   return (
     <>
@@ -925,6 +1153,7 @@ export default function AttendanceReport() {
               </div>
             </HeaderTop>
 
+
             <StatsGrid>
               <StatCard>
                 <StatLabel>
@@ -933,6 +1162,7 @@ export default function AttendanceReport() {
                 </StatLabel>
                 <StatValue>{stats.uniqueEmployees}</StatValue>
               </StatCard>
+
 
               <StatCard>
                 <StatLabel>
@@ -943,6 +1173,7 @@ export default function AttendanceReport() {
               </StatCard>
             </StatsGrid>
           </Header>
+
 
           <Card>
             <CardHeader>
@@ -963,6 +1194,19 @@ export default function AttendanceReport() {
                   />
                 </SearchWrapper>
 
+                {/* Department Filter (Only for Admin) */}
+                {localStorage.getItem('role') === 'Admin' && (
+                  <FilterSelect
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                  >
+                    <option value="All">All Departments</option>
+                    {departments.map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </FilterSelect>
+                )}
+
                 <DatePickerWrapper>
                   <Calendar size={18} style={{ marginRight: 8, color: 'var(--muted)' }} />
                   <DatePicker
@@ -974,26 +1218,42 @@ export default function AttendanceReport() {
                   />
                 </DatePickerWrapper>
 
+
                 <Button onClick={fetchData} disabled={loading}>
                   <RefreshCw size={16} />
                   {loading ? 'Loading...' : 'Refresh'}
                 </Button>
 
+
                 {filteredEmployees.length > 0 && (
-                  <CSVLink
-                    data={csvData}
-                    headers={csvHeaders}
-                    filename={`attendance_${month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.csv`}
-                    target="_blank"
-                  >
-                    <Button $primary>
-                      <Download size={16} />
-                      Export CSV
-                    </Button>
-                  </CSVLink>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <CSVLink
+                      data={csvData}
+                      filename={`attendance_detailed_${month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.csv`}
+                      target="_blank"
+                    >
+                      <Button $primary>
+                        <Download size={16} />
+                        Detailed CSV
+                      </Button>
+                    </CSVLink>
+
+
+                    <CSVLink
+                      data={csvStatusOnlyData}
+                      filename={`attendance_status_${month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.csv`}
+                      target="_blank"
+                    >
+                      <Button style={{ background: '#10b981', borderColor: '#10b981' }}>
+                        <FileText size={16} />
+                        Status CSV
+                      </Button>
+                    </CSVLink>
+                  </div>
                 )}
               </Filters>
             </CardHeader>
+
 
             <TableWrapper>
               {loading ? (
@@ -1012,16 +1272,27 @@ export default function AttendanceReport() {
                 <Table>
                   <THead>
                     <tr>
-                      <TH style={{ minWidth: '200px' }}>Employee</TH>
-                      <TH>Dept</TH>
-                      <TH>Designation</TH>
+                      <TH rowSpan="2" style={{ padding: '0', zIndex: 20 }}>
+                        <div style={{ padding: '12px 16px', minWidth: '200px' }}>Employee</div>
+                      </TH>
+                      <TH rowSpan="2">Dept</TH>
+                      <TH rowSpan="2">Designation</TH>
                       {daysInMonth.map(day => (
-                        <TH key={day.dayNum} className="date-header">
-                          {day.dayNum}<br/>
+                        <TH key={day.dayNum} colSpan="3" style={{ textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
+                          {day.date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}<br />
                           <span style={{ fontSize: '10px', opacity: 0.7 }}>
                             {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
                           </span>
                         </TH>
+                      ))}
+                    </tr>
+                    <tr>
+                      {daysInMonth.map(day => (
+                        <React.Fragment key={day.dayNum}>
+                          <TH style={{ minWidth: '60px', fontSize: '10px', borderLeft: '1px solid var(--border)', color: 'var(--success)', textAlign: 'center' }}>In</TH>
+                          <TH style={{ minWidth: '60px', fontSize: '10px', color: 'var(--danger)', textAlign: 'center' }}>Out</TH>
+                          <TH style={{ minWidth: '60px', fontSize: '10px', color: 'var(--warning)', textAlign: 'center' }}>Hrs</TH>
+                        </React.Fragment>
                       ))}
                     </tr>
                   </THead>
@@ -1033,8 +1304,8 @@ export default function AttendanceReport() {
                             <EmployeeInfo>
                               <EmployeeName>
                                 <ExpandButton as="span">
-                                  {expandedEmployee === emp.employee_id ? 
-                                    <ChevronUp size={16} /> : 
+                                  {expandedEmployee === emp.employee_id ?
+                                    <ChevronUp size={16} /> :
                                     <ChevronDown size={16} />
                                   }
                                 </ExpandButton>
@@ -1048,36 +1319,29 @@ export default function AttendanceReport() {
                           {daysInMonth.map(day => {
                             const dayData = emp.attendance.get(day.dateStr);
                             const statusType = dayData?.status?.status || 'absent';
-                            
+                            // Base background color based on status
+                            const bgColor = statusType === 'present' ? 'rgba(16, 185, 129, 0.05)' :
+                              statusType === 'absent' ? 'transparent' : 'rgba(245, 158, 11, 0.05)';
+
+
                             return (
-                              <TD 
-                                key={day.dayNum} 
-                                className="date-cell"
-                                $status={statusType}
-                              >
-                                {dayData && (dayData.in || dayData.out) ? (
-                                  <AttendanceCell>
-                                    {dayData.in && (
-                                      <TimeLabel $type="IN">IN: {fmtTime(dayData.in)}</TimeLabel>
-                                    )}
-                                    {dayData.out && (
-                                      <TimeLabel $type="OUT">OUT: {fmtTime(dayData.out)}</TimeLabel>
-                                    )}
-                                    {dayData.workHours > 0 && (
-                                      <HoursLabel $hours={dayData.workHours}>
-                                        {dayData.workHours.toFixed(1)}h
-                                      </HoursLabel>
-                                    )}
-                                    {dayData.status && (
-                                      <StatusLabel $type={dayData.status.status}>
-                                        {dayData.status.label}
-                                      </StatusLabel>
-                                    )}
-                                  </AttendanceCell>
-                                ) : (
-                                  <StatusLabel $type="absent">Absent</StatusLabel>
-                                )}
-                              </TD>
+                              <React.Fragment key={day.dayNum}>
+                                <TD style={{ background: bgColor, borderLeft: '1px solid rgba(255,255,255,0.05)', textAlign: 'center', fontSize: '12px' }}>
+                                  {dayData && dayData.in ? (
+                                    <span style={{ color: 'var(--success)', fontWeight: 600 }}>{fmtTime(dayData.in)}</span>
+                                  ) : <span style={{ opacity: 0.3 }}>-</span>}
+                                </TD>
+                                <TD style={{ background: bgColor, textAlign: 'center', fontSize: '12px' }}>
+                                  {dayData && dayData.out ? (
+                                    <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{fmtTime(dayData.out)}</span>
+                                  ) : <span style={{ opacity: 0.3 }}>-</span>}
+                                </TD>
+                                <TD style={{ background: bgColor, textAlign: 'center', fontSize: '12px' }}>
+                                  {dayData && dayData.workHours > 0 ? (
+                                    <span style={{ fontWeight: 700 }}>{dayData.workHours.toFixed(1)}</span>
+                                  ) : <span style={{ opacity: 0.3 }}>-</span>}
+                                </TD>
+                              </React.Fragment>
                             );
                           })}
                         </TR>

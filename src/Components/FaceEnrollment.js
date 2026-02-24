@@ -7,66 +7,60 @@ import styled, { createGlobalStyle, keyframes } from "styled-components";
 /* -------------------------------------------------------------------------- */
 const GlobalStyle = createGlobalStyle`
   :root {
-    --bg1: #0a0e27;
-    --bg2: #1a1f3a;
-    --text: #ffffff;
-    --text-secondary: #a8b2d1;
-    --glass: rgba(255,255,255,0.05);
-    --glass-border: rgba(255,255,255,0.1);
+    --bg1: #0f172a;
+    --bg2: #1e293b;
+    --primary: #6366f1;
+    --primary-2: #8b5cf6;
+    --accent: #22d3ee;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #e5e7eb;
+    --text-secondary: #94a3b8;
+    --muted: #94a3b8;
+    --glass: rgba(255,255,255,0.10);
+    --border: rgba(255,255,255,0.28);
+    --shadow: 0 12px 30px rgba(0,0,0,0.30);
     --radius: 16px;
     --radius-sm: 12px;
-    --shadow-sm: 0 4px 16px rgba(0,0,0,0.2);
-    --shadow-md: 0 8px 32px rgba(0,0,0,0.3);
-    --shadow-lg: 0 20px 60px rgba(0,0,0,0.4);
-    --ok: #00d9a3;
-    --warn: #ffb800;
-    --err: #ff4757;
-    --brand: #667eea;
-    --brand-light: #764ba2;
-    --info: #48dbfb;
-    --purple: #a55eea;
+    --ring: 0 0 0 3px rgba(99,102,241,0.25);
+    --transition: all .2s ease;
+    
+    /* Mappings for existing components in this file */
+    --brand: var(--primary);
+    --brand-light: var(--primary-2);
+    --ok: var(--success);
+    --err: var(--danger);
+    --warn: var(--warning);
   }
   
-  * { 
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  html, body, #root { 
-    height: 100%;
-    overflow-x: hidden;
-  }
+  * { box-sizing: border-box; }
+  html, body, #root { height: 100%; }
   
   body {
+    margin: 0;
     color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: 
-      radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 40% 20%, rgba(72, 219, 251, 0.1) 0%, transparent 50%),
-      linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-    background-attachment: fixed;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background:
+      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
+      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.02);
+    background: rgba(255,255,255,0.05);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.1);
-    border-radius: 10px;
-    
-    &:hover {
-      background: rgba(255,255,255,0.15);
-    }
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
   }
 `;
 
@@ -232,8 +226,8 @@ const FilterButton = styled.button`
   padding: 8px 16px;
   border: 1px solid ${props => props.$active ? props.$color : 'rgba(255,255,255,0.12)'};
   border-radius: 10px;
-  background: ${props => props.$active 
-    ? `linear-gradient(135deg, ${props.$color}22, ${props.$color}11)` 
+  background: ${props => props.$active
+    ? `linear-gradient(135deg, ${props.$color}22, ${props.$color}11)`
     : 'rgba(255,255,255,0.03)'};
   color: ${props => props.$active ? props.$color : 'var(--text-secondary)'};
   font-size: 0.8rem;
@@ -578,19 +572,19 @@ const EmployeeCard = ({ emp, onEncode, index }) => {
       <CardBody>
         <Name title={emp.employeeName}>{emp.employeeName || "Unknown"}</Name>
         <Role title={emp.department}>{emp.department || "No Role"}</Role>
-        
+
         <Divider />
-        
+
         <InfoLine>
           <span>🆔</span> {emp.employeeId || "-"}
         </InfoLine>
-        
+
         {emp.department && (
           <InfoLine title={emp.department}>
             <span>🏢</span> {emp.department}
           </InfoLine>
         )}
-        
+
         {emp.age && (
           <InfoLine>
             <span>🎂</span> {emp.age} years
@@ -703,11 +697,11 @@ const EmployeeList = () => {
         prevEmployees.map((emp) =>
           emp.employeeId === employeeId
             ? {
-                ...emp,
-                is_active: Boolean(is_active),
-                encodingStatus: 'Encoded',
-                current_face_encoding: current_face_encoding ?? true,
-              }
+              ...emp,
+              is_active: Boolean(is_active),
+              encodingStatus: 'Encoded',
+              current_face_encoding: current_face_encoding ?? true,
+            }
             : emp
         )
       );
@@ -743,26 +737,26 @@ const EmployeeList = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </SearchInputWrapper>
-            
+
             <FilterRow>
               <FilterGroup>
                 <FilterLabel>Status:</FilterLabel>
-                <FilterButton 
-                  $active={activeFilter === 'all'} 
+                <FilterButton
+                  $active={activeFilter === 'all'}
                   $color="#667eea"
                   onClick={() => setActiveFilter('all')}
                 >
                   All
                 </FilterButton>
-                <FilterButton 
-                  $active={activeFilter === 'active'} 
+                <FilterButton
+                  $active={activeFilter === 'active'}
                   $color="#00d9a3"
                   onClick={() => setActiveFilter('active')}
                 >
                   ✓ Active
                 </FilterButton>
-                <FilterButton 
-                  $active={activeFilter === 'inactive'} 
+                <FilterButton
+                  $active={activeFilter === 'inactive'}
                   $color="#ff4757"
                   onClick={() => setActiveFilter('inactive')}
                 >
@@ -772,22 +766,22 @@ const EmployeeList = () => {
 
               <FilterGroup>
                 <FilterLabel>Encoding:</FilterLabel>
-                <FilterButton 
-                  $active={encodingFilter === 'all'} 
+                <FilterButton
+                  $active={encodingFilter === 'all'}
                   $color="#667eea"
                   onClick={() => setEncodingFilter('all')}
                 >
                   All
                 </FilterButton>
-                <FilterButton 
-                  $active={encodingFilter === 'encoded'} 
+                <FilterButton
+                  $active={encodingFilter === 'encoded'}
                   $color="#00d9a3"
                   onClick={() => setEncodingFilter('encoded')}
                 >
                   🔐 Encoded
                 </FilterButton>
-                <FilterButton 
-                  $active={encodingFilter === 'pending'} 
+                <FilterButton
+                  $active={encodingFilter === 'pending'}
                   $color="#ffb800"
                   onClick={() => setEncodingFilter('pending')}
                 >
@@ -815,28 +809,28 @@ const EmployeeList = () => {
               <p style={{ marginTop: '20px', fontWeight: 500 }}>Loading employees...</p>
             </Empty>
           )}
-          
+
           {!loading && error && (
             <Empty>
               <EmptyIcon>⚠️</EmptyIcon>
               <p style={{ fontWeight: 500 }}>{error}</p>
             </Empty>
           )}
-          
+
           {!loading && !error && filteredEmployees.length === 0 && (
             <Empty>
               <EmptyIcon>🔍</EmptyIcon>
               <p style={{ fontWeight: 500 }}>No employees found.</p>
             </Empty>
           )}
-          
+
           {!loading && !error && filteredEmployees.length > 0 && (
             <Grid>
               {filteredEmployees.map((emp, index) => (
-                <EmployeeCard 
-                  key={emp.employeeId} 
-                  emp={emp} 
-                  onEncode={encodeOne} 
+                <EmployeeCard
+                  key={emp.employeeId}
+                  emp={emp}
+                  onEncode={encodeOne}
                   index={index}
                 />
               ))}

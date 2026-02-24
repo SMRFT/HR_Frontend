@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import styled, { keyframes, createGlobalStyle } from 'styled-components';
+import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import illustration from '../assets/hr_platform_illustration.png';
 
 // Global palette and dark gradient background
 const GlobalStyle = createGlobalStyle`
@@ -148,6 +150,15 @@ const ImageSubtitle = styled.p`
   max-width: 420px;
   text-shadow: 0 2px 6px rgba(0,0,0,0.4);
   color: var(--muted);
+`;
+
+const Illustration = styled.img`
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin-bottom: 2rem;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+  animation: ${float} 6s ease-in-out infinite;
 `;
 
 // Form section
@@ -349,9 +360,10 @@ const Message = styled.div`
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
-    role: '',
     password: '',
     confirmPassword: '',
+    fingerprint_id: '',
+    device: '',
   });
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -359,8 +371,20 @@ const Register = () => {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Default role is always "HR"
+  // const [role, setRole] = useState('HR');
+
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
 
+  // On mount, get fingerprint
+  useEffect(() => {
+    const getFingerprint = async () => {
+      const fp = await FingerprintJS.load();
+      const result = await fp.get();
+      setFormData(prev => ({ ...prev, fingerprint_id: result.visitorId }));
+    };
+    getFingerprint();
+  }, []);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -388,9 +412,11 @@ const Register = () => {
     try {
       const requestData = {
         name: formData.name,
-        role: formData.role,
+        role: "HR", // Default
         password: formData.password,
         confirmPassword: formData.confirmPassword,
+        fingerprint_id: formData.fingerprint_id,
+        device: formData.device,
       };
       await axios.post(
         `${HRbaseurl}hrregistration/`,
@@ -398,7 +424,7 @@ const Register = () => {
       );
       setMessage('Registration successful!');
       setSuccess(true);
-      setFormData({ name: '', role: '', password: '', confirmPassword: '' });
+      setFormData({ name: '', password: '', confirmPassword: '', fingerprint_id: formData.fingerprint_id, device: '' });
     } catch (error) {
       setMessage(
         error?.response?.data?.error || 'Registration failed. Please try again.'
@@ -413,6 +439,7 @@ const Register = () => {
     <>
       <GlobalStyle />
       <PageContainer>
+        {/* <-- Place your Blob, Card, ImageSection etc styled-components here just like your original design --> */}
         <Blob
           size={420}
           blur={80}
@@ -434,19 +461,20 @@ const Register = () => {
         <Card>
           <ImageSection>
             <ContentOverlay>
+              <Illustration src={illustration} alt="Platform Illustration" />
               <ImageTitle>Join Our Platform</ImageTitle>
               <ImageSubtitle>
                 Create your account and unlock access to powerful tools and features
               </ImageSubtitle>
             </ContentOverlay>
           </ImageSection>
-
           <FormSection>
             <FormHeader>
-              <Title>Create an Account</Title>
-              <Subtitle>Please fill in the form to register</Subtitle>
+              <Title>Device Registration</Title>
+              <Subtitle>
+                Please fill in the form to register
+              </Subtitle>
             </FormHeader>
-
             <Form onSubmit={handleSubmit}>
               <FormGrid>
                 <FormGroup>
@@ -463,18 +491,39 @@ const Register = () => {
                 </FormGroup>
 
                 <FormGroup>
-                  <Label htmlFor="role">Select Role</Label>
-                  <Select
-                    id="role"
+                  <Label htmlFor="role">Role (fixed)</Label>
+                  <Input
+                    disabled
+                    value="HR"
                     name="role"
-                    value={formData.role}
+                    style={{ background: "#22223b", color: "#fff", fontWeight: 600 }}
+                    readOnly
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="device">Device Name</Label>
+                  <Select
+                    id="device"
+                    name="device"
+                    value={formData.device}
                     onChange={handleChange}
                     required
                   >
-                    <option value="">Select a role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Company">Company</option>
+                    <option value="" disabled>Select Device</option>
+                    <option value="Master_Health_Checkup_001">Master_Health_Checkup_001</option>
+                    <option value="HR_Office_PC_001">HR_Office_PC_001</option>
                   </Select>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Device Fingerprint ID</Label>
+                  <Input
+                    name="fingerprint_id"
+                    value={formData.fingerprint_id}
+                    readOnly
+                    style={{ background: "#f1f5f9", color: "#0f172a", fontFamily: "monospace" }}
+                  />
                 </FormGroup>
 
                 <FormGroup>
@@ -527,7 +576,6 @@ const Register = () => {
                 {loading ? 'Creating...' : 'Create Account'}
               </SubmitButton>
             </Form>
-
             <Message visible={message !== ''} success={success}>
               {message}
             </Message>

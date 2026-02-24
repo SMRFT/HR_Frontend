@@ -1,18 +1,25 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import './App.css';
 import Login from './Components/Login';
-import Register from './Components/Register';
-import WebcamCapture from './Components/WebcamCapture';
-import HRregister from './Components/HRregister';
-import EmployeeHR from './Components/EmployeeHR';
+import EmployeeRegistration from './Components/EmployeeRegistration';
+import KioskAttendance from './Components/KioskAttendance';
+import DeviceRegistration from './Components/DeviceRegistration';
+import EmployeeManagement from './Components/EmployeeManagement';
 import AttendanceReport from './Components/AttendanceReport';
-import Faceencoding from './Components/Faceencoding';
-import AudioUpload from './Components/AudioUpload';
-import Fingerprontid from './Components/Deviceid';
+import FaceEnrollment from './Components/FaceEnrollment';
+import DeviceIdentifier from './Components/DeviceIdentifier';
+import DailyAttendance from './Components/DailyAttendance';
+import SpoofingReports from './Components/SpoofingReports';
 import Sidebar from './Components/Sidebar';
+import ShiftManagement from './Components/ShiftManagement';
+import RosterReport from './Components/RosterReport';
+import UserRegistration from './Components/UserRegistration';
+import RosterAttendanceReport from './Components/RosterAttendanceReport';
 import { useLocation } from 'react-router-dom';
+
+
 
 // Layout with Sidebar
 const AppLayout = styled.div`
@@ -26,7 +33,7 @@ const AppLayout = styled.div`
 
 const MainContent = styled.main`
   flex: 1;
-  margin-left: ${props => props.$noSidebar ? '0' : '280px'};
+  margin-left: ${props => props.$noSidebar ? '0' : (props.$isCollapsed ? '80px' : '280px')};
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   @media (max-width: 768px) {
@@ -35,23 +42,27 @@ const MainContent = styled.main`
 `;
 
 const ContentWrapper = styled.div`
-  padding: ${props => props.$noSidebar ? '0' : '20px'};
+  padding: 0;
   min-height: 100vh;
-
-  @media (max-width: 768px) {
-    padding: ${props => props.$noSidebar ? '0' : '80px 15px 15px'};
-  }
 `;
 
 // Protected Routes Component
 function ProtectedLayout({ children }) {
   const location = useLocation();
-  const noSidebar = location.pathname === '/';
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const noSidebar = location.pathname === '/webcam';
+
+  // Authentication check
+  const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <AppLayout>
-      <Sidebar />
-      <MainContent $noSidebar={noSidebar}>
+      <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      <MainContent $noSidebar={noSidebar} $isCollapsed={isCollapsed}>
         <ContentWrapper $noSidebar={noSidebar}>
           {children}
         </ContentWrapper>
@@ -65,53 +76,87 @@ function App() {
     <Router basename="/HR">
       <Routes>
         {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        
+        <Route path="/" element={<Login />} />
+
         {/* Protected Routes with Conditional Sidebar */}
-        <Route path="/" element={
+        <Route path="/webcam" element={
           <ProtectedLayout>
-            <WebcamCapture />
+            <KioskAttendance />
           </ProtectedLayout>
         } />
-        
+
         <Route path="/register" element={
           <ProtectedLayout>
-            <Register />
+            <EmployeeRegistration />
           </ProtectedLayout>
         } />
-        
+
         <Route path="/Hrregister" element={
           <ProtectedLayout>
-            <HRregister />
+            <DeviceRegistration />
           </ProtectedLayout>
         } />
-                <Route path="/Finger" element={
+        <Route path="/Finger" element={
           <ProtectedLayout>
-            <Fingerprontid />
+            <DeviceIdentifier />
           </ProtectedLayout>
         } />
         <Route path="/HRAction" element={
           <ProtectedLayout>
-            <EmployeeHR />
+            <EmployeeManagement />
           </ProtectedLayout>
         } />
-        
+
         <Route path="/AttendanceReport" element={
           <ProtectedLayout>
             <AttendanceReport />
           </ProtectedLayout>
         } />
-        
+
+        <Route path="/daily-attendance" element={
+          <ProtectedLayout>
+            <DailyAttendance />
+          </ProtectedLayout>
+        } />
+
         <Route path="/Faceencoding" element={
           <ProtectedLayout>
-            <Faceencoding />
+            <FaceEnrollment />
           </ProtectedLayout>
         } />
-                <Route path="/AudioUpload" element={
+
+        <Route path="/spoofing-attempts" element={
           <ProtectedLayout>
-            <AudioUpload />
+            <SpoofingReports />
           </ProtectedLayout>
         } />
+
+
+        <Route path="/shifts" element={
+          <ProtectedLayout>
+            <ShiftManagement />
+          </ProtectedLayout>
+        } />
+
+        <Route path="/roster-report" element={
+          <ProtectedLayout>
+            <RosterReport />
+          </ProtectedLayout>
+        } />
+
+        <Route path="/user-register" element={
+          <ProtectedLayout>
+            <UserRegistration />
+          </ProtectedLayout>
+        } />
+
+        <Route path="/roster-attendance-report" element={
+          <ProtectedLayout>
+            <RosterAttendanceReport />
+          </ProtectedLayout>
+        } />
+
+
         {/* 404 Route */}
         <Route path="*" element={
           <ProtectedLayout>
