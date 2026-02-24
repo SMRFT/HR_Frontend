@@ -481,10 +481,18 @@ export default function EmployeeHR() {
     try {
       setError(null);
       setLoading(true);
+      const role = localStorage.getItem('role');
+      const dept = localStorage.getItem('department');
+      const params = {};
+      if (role && role !== 'Admin' && dept) {
+        params.department = dept;
+      }
+
       const res = await axios.get(
         `${HRbaseurl}employees/`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          params
         }
       );
       setEmployees(res.data);

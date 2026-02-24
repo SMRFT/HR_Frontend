@@ -17,7 +17,8 @@ import {
   Settings,
   HelpCircle,
   Camera,
-  Clock
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 
 // Global Styles
@@ -450,15 +451,14 @@ const MobileMenuButton = styled.button`
   }
 `;
 
-// Menu Items Configuration
+// Menu Items Configuration (moved outside if static)
 const menuItems = [
-
   {
     section: 'Employee Management',
     items: [
       { path: '/register', icon: UserPlus, label: 'Register Employee' },
+      { path: '/user-register', icon: Users, label: 'Create User Login' }, // New Link
       { path: '/HRAction', icon: Users, label: 'All Employees' },
-      // { path: '/Faceencoding', icon: ScanFace, label: 'Face Encoding' },
     ]
   },
   {
@@ -466,6 +466,14 @@ const menuItems = [
     items: [
       { path: '/daily-attendance', icon: Clock, label: "Today's Status" },
       { path: '/AttendanceReport', icon: FileBarChart, label: 'Attendance Report' },
+      // { path: '/spoofing-attempts', icon: AlertTriangle, label: 'Spoofing Reports' },
+      { path: '/roster-attendance-report', icon: FileBarChart, label: 'Roster vs Actual' },
+    ]
+  },
+  {
+    section: 'Configuration',
+    items: [
+      { path: '/shifts', icon: Clock, label: 'Shift Management' },
     ]
   },
   {
@@ -490,6 +498,25 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
   // Hide sidebar for Face Recognition page
   const shouldHideSidebar = location.pathname === '/webcam';
+
+  // Filter menu items based on role
+  const filteredMenuItems = React.useMemo(() => {
+    return menuItems.map(section => {
+      // For Admin, show everything
+      if (userRole === 'Admin') return section;
+
+      // For others, filter out restricted pages
+      const restrictedPaths = ['/register', '/webcam', '/Hrregister', '/user-register'];
+      const filteredItems = section.items.filter(item => !restrictedPaths.includes(item.path));
+
+      if (filteredItems.length === 0) return null;
+
+      return {
+        ...section,
+        items: filteredItems
+      };
+    }).filter(Boolean);
+  }, [userRole]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -561,7 +588,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         </SidebarHeader>
 
         <Nav>
-          {menuItems.map((section, idx) => (
+          {filteredMenuItems.map((section, idx) => (
             <NavSection key={idx}>
               <NavSectionTitle $isCollapsed={isCollapsed}>
                 {section.section}

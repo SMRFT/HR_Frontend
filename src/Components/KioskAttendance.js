@@ -462,6 +462,39 @@ export default function WebcamCapture({ onResult }) {
     }
   }, []);
 
+  const playErrorSound = useCallback(() => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      const ctx = new AudioContext();
+
+      const playTone = (freq, startTime, duration, type = 'sine') => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0.2, startTime);
+        gain.gain.linearRampToValueAtTime(0.001, startTime + duration);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      const now = ctx.currentTime;
+      // Play a dissonant chord for error
+      playTone(400, now, 0.4, 'sawtooth');
+      playTone(200, now, 0.4, 'sawtooth');
+    } catch (err) {
+      console.warn("Audio playback failed", err);
+    }
+  }, []);
+
   const mirrored = facingMode === "user";
   const videoConstraints = useMemo(() => ({
     facingMode,
@@ -566,6 +599,7 @@ export default function WebcamCapture({ onResult }) {
         // TOAST LOGIC:
         // 1. Spoofing: Critical, showing it separately so it isn't overwritten by "User Not Found"
         if (isSpoof) {
+          playErrorSound(); // 🔊 Play error sound for spoofing
           toast.error(errorMsg, {
             position: "top-center",
             autoClose: 4000,
@@ -591,7 +625,7 @@ export default function WebcamCapture({ onResult }) {
         setTimeout(() => setFeedbackMessage(null), 2000);
       }
     }
-  }, [selectedMode, onResult, HRbaseurl, playSuccessSound]);
+  }, [selectedMode, onResult, HRbaseurl, playSuccessSound, playErrorSound]);
 
   const fmtTimestamp = (iso) => {
     if (!iso) return "-";

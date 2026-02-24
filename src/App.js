@@ -11,8 +11,15 @@ import AttendanceReport from './Components/AttendanceReport';
 import FaceEnrollment from './Components/FaceEnrollment';
 import DeviceIdentifier from './Components/DeviceIdentifier';
 import DailyAttendance from './Components/DailyAttendance';
+import SpoofingReports from './Components/SpoofingReports';
 import Sidebar from './Components/Sidebar';
+import ShiftManagement from './Components/ShiftManagement';
+import RosterReport from './Components/RosterReport';
+import UserRegistration from './Components/UserRegistration';
+import RosterAttendanceReport from './Components/RosterAttendanceReport';
 import { useLocation } from 'react-router-dom';
+
+
 
 // Layout with Sidebar
 const AppLayout = styled.div`
@@ -117,6 +124,38 @@ function App() {
             <FaceEnrollment />
           </ProtectedLayout>
         } />
+
+        <Route path="/spoofing-attempts" element={
+          <ProtectedLayout>
+            <SpoofingReports />
+          </ProtectedLayout>
+        } />
+
+
+        <Route path="/shifts" element={
+          <ProtectedLayout>
+            <ShiftManagement />
+          </ProtectedLayout>
+        } />
+
+        <Route path="/roster-report" element={
+          <ProtectedLayout>
+            <RosterReport />
+          </ProtectedLayout>
+        } />
+
+        <Route path="/user-register" element={
+          <ProtectedLayout>
+            <UserRegistration />
+          </ProtectedLayout>
+        } />
+
+        <Route path="/roster-attendance-report" element={
+          <ProtectedLayout>
+            <RosterAttendanceReport />
+          </ProtectedLayout>
+        } />
+
 
         {/* 404 Route */}
         <Route path="*" element={

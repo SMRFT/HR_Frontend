@@ -373,12 +373,18 @@ export default function DailyAttendance() {
 
       const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-      const res = await axios.get(`${HRbaseurl}attendance-report/`, {
-        params: {
-          from_date: ymd(start),
-          to_date: ymd(end)
-        }
-      });
+      const role = localStorage.getItem('role');
+      const dept = localStorage.getItem('department');
+      const params = {
+        from_date: ymd(start),
+        to_date: ymd(end)
+      };
+
+      if (role && role !== 'Admin' && dept) {
+        params.department = dept;
+      }
+
+      const res = await axios.get(`${HRbaseurl}attendance-report/`, { params });
 
       setData(res.data || []);
     } catch (err) {
@@ -480,7 +486,13 @@ export default function DailyAttendance() {
     }
 
     // Filter: Department
-    if (departmentFilter !== 'All') {
+    // For non-admin, force the filter to always match their department (even if 'All' is selected, though UI should hide 'All' ideally)
+    const role = localStorage.getItem('role');
+    const userDept = localStorage.getItem('department');
+
+    if (role && role !== 'Admin' && userDept) {
+      result = result.filter(p => p.department === userDept);
+    } else if (departmentFilter !== 'All') {
       result = result.filter(p => p.department === departmentFilter);
     }
 
@@ -613,14 +625,18 @@ export default function DailyAttendance() {
                   />
                 </SearchBox>
 
-                <SelectBox
-                  value={departmentFilter}
-                  onChange={e => setDepartmentFilter(e.target.value)}
-                >
-                  {departments.map(d => (
-                    <option key={d} value={d}>{d === 'All' ? 'All Departments' : d}</option>
-                  ))}
-                </SelectBox>
+                {/* Only show department filter for generic users if we want them to filter WITHIN their allowed scope (which is 1 dept, so useless) */
+                  /* Actually, best to hide "All Departments" selector if not Admin */
+                  (localStorage.getItem('role') === 'Admin') && (
+                    <SelectBox
+                      value={departmentFilter}
+                      onChange={e => setDepartmentFilter(e.target.value)}
+                    >
+                      {departments.map(d => (
+                        <option key={d} value={d}>{d === 'All' ? 'All Departments' : d}</option>
+                      ))}
+                    </SelectBox>
+                  )}
 
                 <SelectBox
                   value={statusFilter}

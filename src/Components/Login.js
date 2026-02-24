@@ -216,7 +216,7 @@ const FingerprintText = styled.div`
 
 const Login = () => {
   const [loginMethod, setLoginMethod] = useState("password");
-  const [form, setForm] = useState({ name: "", password: "" });
+  const [form, setForm] = useState({ employee_id: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fingerprint, setFingerprint] = useState(null);
@@ -247,7 +247,7 @@ const Login = () => {
     setLoading(true);
     try {
       const { data } = await axios.post(`${HRbaseurl}login/`, {
-        name: form.name,
+        employee_id: form.employee_id,
         password: form.password,
       });
       toast.success("Login Successfully!", { autoClose: 2000 });
@@ -255,6 +255,8 @@ const Login = () => {
       localStorage.setItem("access_token", data.token);
       localStorage.setItem("name", data.name);
       localStorage.setItem("role", data.role);
+      localStorage.setItem("department", data.department);
+      localStorage.setItem("employee_id", data.employee_id);
 
       setTimeout(() => navigate("/register"), 1500); // Go to register page
     } catch (err) {
@@ -326,13 +328,13 @@ const Login = () => {
           {loginMethod === "password" ? (
             <Form onSubmit={onSubmitPassword}>
               <Field>
-                <Label htmlFor="name">User Name</Label>
+                <Label htmlFor="employee_id">Employee ID</Label>
                 <Input
-                  id="name"
-                  name="name"
+                  id="employee_id"
+                  name="employee_id"
                   type="text"
-                  placeholder="Enter your user name"
-                  value={form.name}
+                  placeholder="Enter your Employee ID"
+                  value={form.employee_id}
                   onChange={onChange}
                   autoComplete="username"
                   required
