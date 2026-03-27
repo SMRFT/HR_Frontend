@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import api from "../api";
 import styled, { keyframes } from "styled-components";
+import { Search, Download, FileSpreadsheet, Globe, UserCheck, UserX } from "lucide-react";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
@@ -455,6 +456,7 @@ const CloseButton = styled.button`
 
 export default function EmployeeHR() {
   const [employees, setEmployees] = useState([]);
+  const [globalFilter, setGlobalFilter] = useState("all");
   const [departments, setDepartments] = useState([]);
   const [selectedDepts, setSelectedDepts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -479,20 +481,7 @@ export default function EmployeeHR() {
       setLoading(true);
       const role = localStorage.getItem('role');
       const dept = localStorage.getItem('department_id');
-      const params = {};
-
-      if (role && role !== 'Admin' && dept) {
-        params.department = dept;
-      } else if (selectedDepts.length > 0) {
-        params.department = selectedDepts.join(',');
-      }
-
-      const res = await api.get(
-        "employees/",
-        {
-          params
-        }
-      );
+      const res = await api.get("employees/");
       setEmployees(res.data);
     } catch (err) {
       console.error(err);
@@ -500,11 +489,11 @@ export default function EmployeeHR() {
     } finally {
       setLoading(false);
     }
-  }, [HRbaseurl, selectedDepts]);
+  }, [HRbaseurl]);
 
   useEffect(() => {
     fetchEmployees();
-  }, [fetchEmployees, selectedDepts]);
+  }, [fetchEmployees]);
 
   useEffect(() => {
     const fetchDepts = async () => {
@@ -518,13 +507,6 @@ export default function EmployeeHR() {
     fetchDepts();
   }, [HRbaseurl]);
 
-  const toggleDepartment = (deptId) => {
-    setSelectedDepts(prev =>
-      prev.includes(deptId)
-        ? prev.filter(id => id !== deptId)
-        : [...prev, deptId]
-    );
-  };
 
   const updateEmployeeStatus = useCallback((id, newStatus) => {
     setEmployees(prevEmployees =>
@@ -591,15 +573,26 @@ export default function EmployeeHR() {
         (statusFilter === "enabled" && emp.is_active) ||
         (statusFilter === "disabled" && !emp.is_active);
 
-      return matchesSearch && matchesStatus;
+      const matchesGlobal =
+        globalFilter === "all" ||
+        (globalFilter === "available" && emp.has_global_profile) ||
+        (globalFilter === "not-found" && !emp.has_global_profile);
+
+      const matchesDept =
+        selectedDepts.length === 0 ||
+        selectedDepts.includes(emp.department);
+
+      return matchesSearch && matchesStatus && matchesGlobal && matchesDept;
     });
-  }, [employees, searchQuery, statusFilter]);
+  }, [employees, searchQuery, statusFilter, globalFilter, selectedDepts]);
 
   const stats = useMemo(() => {
     const total = employees.length;
     const enabled = employees.filter((e) => e.is_active).length;
     const disabled = total - enabled;
-    return { total, enabled, disabled };
+    const globalAvailable = employees.filter(e => e.has_global_profile).length;
+    const globalNotFound = total - globalAvailable;
+    return { total, enabled, disabled, globalAvailable, globalNotFound };
   }, [employees]);
 
   return (
@@ -641,6 +634,35 @@ export default function EmployeeHR() {
               />
             </SearchWrapper>
 
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <button
+                onClick={() => {
+                  const url = `${process.env.REACT_APP_BACKEND_HR_BASE_URL}employees/export-xls/`;
+                  window.open(url, '_blank');
+                }}
+                style={{
+                  height: '48px',
+                  padding: '0 1.25rem',
+                  background: 'rgba(16, 185, 129, 0.2)',
+                  color: '#34d399',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '11px',
+                  fontWeight: '600',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.3)'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'}
+              >
+                <Download size={18} />
+                Export
+              </button>
+            </div>
+
             {(localStorage.getItem('role') === 'Admin' || !localStorage.getItem('department_id')) && (
               <FilterSelect
                 value={selectedDepts.length === 0 ? "all" : selectedDepts[0]}
@@ -651,10 +673,19 @@ export default function EmployeeHR() {
               >
                 <option value="all">All Departments</option>
                 {departments.map(dept => (
-                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                  <option key={dept.id} value={dept.name}>{dept.name}</option>
                 ))}
               </FilterSelect>
             )}
+
+            <FilterSelect
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+            >
+              <option value="all">Global Profile (All)</option>
+              <option value="available">Available in Global</option>
+              <option value="not-found">Not Found in Global</option>
+            </FilterSelect>
 
             <div style={{ display: 'flex', gap: '1rem', marginLeft: 'auto' }}>
 
@@ -673,12 +704,22 @@ export default function EmployeeHR() {
             <Stat>
               Total: <strong>{stats.total}</strong>
             </Stat>
-            <Stat>
-              Enabled: <strong style={{ color: '#6ee7b7' }}>{stats.enabled}</strong>
-            </Stat>
-            <Stat>
-              Disabled: <strong style={{ color: '#fca5a5' }}>{stats.disabled}</strong>
-            </Stat>
+              <Stat>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6ee7b7' }} />
+                Enabled: <strong>{stats.enabled}</strong>
+              </Stat>
+              <Stat>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fca5a5' }} />
+                Disabled: <strong>{stats.disabled}</strong>
+              </Stat>
+              <Stat>
+                <Globe size={14} style={{ color: '#818cf8' }} />
+                Global Available: <strong>{stats.globalAvailable}</strong>
+              </Stat>
+              <Stat>
+                <Globe size={14} opacity={0.5} />
+                Global Not Found: <strong>{stats.globalNotFound}</strong>
+              </Stat>
             <Stat>
               Showing: <strong>{filteredEmployees.length}</strong>
             </Stat>
@@ -697,6 +738,8 @@ export default function EmployeeHR() {
                 <THead>
                   <tr>
                     <TH>Employee</TH>
+                    <TH>Department</TH>
+                    <TH>Global Profile</TH>
                     <TH>Face Recognition</TH>
                     <TH>Action</TH>
                   </tr>
@@ -720,11 +763,30 @@ export default function EmployeeHR() {
                         </EmployeeCell>
                       </TD>
                       <TD>
+                        <div style={{ fontSize: '13px', color: emp.department ? 'var(--text)' : 'var(--muted)' }}>
+                          {emp.department || "No Department"}
+                        </div>
+                      </TD>
+                      <TD>
+                        <Badge active={emp.has_global_profile} style={{ 
+                          background: emp.has_global_profile ? 'rgba(99, 102, 241, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                          color: emp.has_global_profile ? '#818cf8' : '#94a3b8',
+                          borderColor: emp.has_global_profile ? 'rgba(99, 102, 241, 0.3)' : 'rgba(148, 163, 184, 0.3)'
+                        }}>
+                          {emp.has_global_profile ? (
+                            <><Globe size={13} /> Available</>
+                          ) : (
+                            <><Globe size={13} opacity={0.5} /> Not Found</>
+                          )}
+                        </Badge>
+                      </TD>
+                      <TD>
                         <Badge active={emp.is_active}>
                           <StatusDot active={emp.is_active} />
                           {emp.is_active ? "Enabled" : "Disabled"}
                         </Badge>
                       </TD>
+
                       <TD>
                         <RadioGroup>
                           <RadioOption
