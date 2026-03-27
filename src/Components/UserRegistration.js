@@ -189,11 +189,27 @@ const SubmitButton = styled.button`
   border-radius: var(--radius-sm);
   font-weight: 600;
   color: #fff;
-  background-image: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  background-color: #4f46e5;
+  background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   border: none;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(139,92,246,0.25);
-  &:disabled { opacity: 0.7; cursor: not-allowed; }
+  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.35);
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(79, 70, 229, 0.45);
+    filter: brightness(1.05);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled { 
+    opacity: 0.7; 
+    cursor: not-allowed; 
+  }
 `;
 
 const Message = styled.div`

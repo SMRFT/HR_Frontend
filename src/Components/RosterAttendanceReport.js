@@ -351,6 +351,8 @@ const TableCard = styled.div`
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
 `;
 
 const TableCardHeader = styled.div`
@@ -385,10 +387,14 @@ const RecordCount = styled.div`
 // ─── Scrollable Table Shell ───────────────────────────────────────────────────
 const ScrollShell = styled.div`
   width: 100%;
-  overflow-x: auto;
+  overflow: auto;
+  max-height: 70vh;
   -webkit-overflow-scrolling: touch;
 
-  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar { 
+    width: 6px;
+    height: 6px; 
+  }
   &::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.2);
     border-radius: 3px;

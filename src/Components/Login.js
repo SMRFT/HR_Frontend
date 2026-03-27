@@ -521,7 +521,13 @@ const Login = () => {
       localStorage.setItem("department_id", data.department_id);
       localStorage.setItem("department_name", data.department_name);
       localStorage.setItem("employee_id", data.employee_id);
-      setTimeout(() => navigate("/HRAction"), 1500);
+      setTimeout(() => {
+        if (data.role === "Admin") {
+          navigate("/HRAction");
+        } else {
+          navigate("/daily-attendance");
+        }
+      }, 1500);
     } catch (err) {
       const msg =
         err?.response?.data?.error ||

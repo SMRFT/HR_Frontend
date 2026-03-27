@@ -81,7 +81,8 @@ function PublicRoute({ children }) {
   
   if (token) {
     // Redirect to dashboard if already authenticated
-    return <Navigate to="/HRAction" replace />;
+    const role = localStorage.getItem("role");
+    return <Navigate to={role === "Admin" ? "/HRAction" : "/daily-attendance"} replace />;
   }
 
   return children;
