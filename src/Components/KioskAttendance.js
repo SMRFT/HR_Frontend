@@ -1,43 +1,11 @@
 import React, { useRef, useCallback, useMemo, useState, useEffect } from "react";
 import Webcam from "react-webcam";
 import axios from "axios";
-import styled, { createGlobalStyle, keyframes } from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
-
-// Global visual baseline
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
-  }
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; margin: 0; overflow: hidden; }
-  body {
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-  }
-`;
 
 // Responsive layout - NO SCROLL
 const Shell = styled.div`
@@ -429,6 +397,23 @@ export default function WebcamCapture({ onResult }) {
   const [isAutoCapture, setIsAutoCapture] = useState(true);
   const isProcessing = useRef(false);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+
+  // Initialize Device Fingerprint
+  useEffect(() => {
+    const initFingerprint = async () => {
+      try {
+        const FingerprintJS = (await import("@fingerprintjs/fingerprintjs")).default;
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+        setDeviceId(result.visitorId);
+        console.log("Device ID Initialized:", result.visitorId);
+      } catch (err) {
+        console.error("Fingerprint initialization failed", err);
+      }
+    };
+    initFingerprint();
+  }, []);
 
   const playSuccessSound = useCallback(() => {
     try {
@@ -563,6 +548,7 @@ export default function WebcamCapture({ onResult }) {
           headers: {
             Authorization: `${token}`,
             "Content-Type": "application/json",
+            "X-Device-Id": deviceId,
           },
         }
       );
@@ -647,7 +633,6 @@ export default function WebcamCapture({ onResult }) {
 
   return (
     <>
-      <GlobalStyle />
       <ToastContainer />
       <TopLeftLogout onClick={handleLogout} title="Exit / Admin Login">
         <LogOut size={18} />

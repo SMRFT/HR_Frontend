@@ -1,238 +1,501 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api";
 import { useNavigate } from "react-router-dom";
-import styled, { keyframes, createGlobalStyle } from "styled-components";
+import styled, { keyframes } from "styled-components";
 import "@fontsource/poppins";
-import { FaEye, FaEyeSlash, FaFingerprint } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaDesktop } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
-import FingerprintJS from "@fingerprintjs/fingerprintjs";
 
+// ─── Animations ───────────────────────────────────────────────────────────────
+const slideInLeft = keyframes`
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+`;
 
+const slideInRight = keyframes`
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+`;
 
-// Global palette + responsive background (one-time injection)
-// Global palette + responsive background
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
+const shimmer = keyframes`
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+`;
+
+const floatUp = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+`;
+
+const blobPulse = keyframes`
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.55; }
+  33%       { transform: scale(1.15) translate(8px, -12px); opacity: 0.7; }
+  66%       { transform: scale(0.9) translate(-6px, 8px); opacity: 0.45; }
+`;
+
+const blobPulse2 = keyframes`
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.4; }
+  40%       { transform: scale(1.2) translate(-10px, 14px); opacity: 0.62; }
+  70%       { transform: scale(0.88) translate(12px, -8px); opacity: 0.35; }
+`;
+
+const spinSlow = keyframes`
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+`;
+
+const spinSlowRev = keyframes`
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+`;
+
+const LeftPanel = styled.div`
+  flex: 1.1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 48px;
+  overflow: hidden;
+  animation: ${slideInLeft} 0.6s ease both;
+
+  /* Rich layered background */
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 75%, rgba(6,182,212,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 10%, rgba(139,92,246,0.14) 0%, transparent 45%),
+    linear-gradient(160deg, #060d1e 0%, #0d1535 40%, #071020 100%);
+
+  /* Dot grid overlay */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle, rgba(99,102,241,0.25) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
   }
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; }
-  body {
-    margin: 0;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    color: var(--text);
+
+  @media (max-width: 768px) {
+    flex: none;
+    min-height: 300px;
+    padding: 32px 28px;
+    justify-content: center;
   }
 `;
 
-// Subtle entrance
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Decorative blobs ── */
+const Blob = styled.div`
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
 `;
 
-// Page shell centers the card, relies on GlobalStyle for background
+const Blob1 = styled(Blob)`
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(99,102,241,0.55) 0%, transparent 70%);
+  top: -60px; left: -60px;
+  animation: ${blobPulse} 9s ease-in-out infinite;
+`;
+
+const Blob2 = styled(Blob)`
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(6,182,212,0.45) 0%, transparent 70%);
+  bottom: 40px; right: -60px;
+  animation: ${blobPulse2} 11s ease-in-out infinite;
+`;
+
+const Blob3 = styled(Blob)`
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%);
+  top: 45%; left: 55%;
+  animation: ${blobPulse} 13s 2s ease-in-out infinite;
+`;
+
+/* ── Decorative rings ── */
+const Ring = styled.div`
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid;
+  pointer-events: none;
+  z-index: 0;
+`;
+
+const Ring1 = styled(Ring)`
+  width: 380px; height: 380px;
+  border-color: rgba(99,102,241,0.12);
+  top: -100px; left: -100px;
+  animation: ${spinSlow} 40s linear infinite;
+`;
+
+const Ring2 = styled(Ring)`
+  width: 260px; height: 260px;
+  border-color: rgba(6,182,212,0.1);
+  bottom: 60px; right: -80px;
+  animation: ${spinSlowRev} 30s linear infinite;
+`;
+
+const Ring3 = styled(Ring)`
+  width: 160px; height: 160px;
+  border-color: rgba(139,92,246,0.14);
+  top: 40%; left: 60%;
+  animation: ${spinSlow} 20s linear infinite;
+`;
+
+
 const Page = styled.div`
-  min-height: 100%;
+  min-height: 100vh;
   width: 100%;
-  display: grid;
-  place-items: center;
-  padding: clamp(16px, 3vw, 32px);
+  display: flex;
+  background: #0b0f1a;
+  font-family: 'Poppins', sans-serif;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
-// Glass card using your palette
-const Card = styled.div`
-  width: min(92vw, 460px);
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: clamp(18px, 3.5vw, 28px);
-  animation: ${fadeIn} 0.35s ease both;
+const LeftOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(6,13,30,0.05) 0%,
+    rgba(6,13,30,0.25) 50%,
+    rgba(6,13,30,0.8) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
 `;
 
-// Typography
-const Title = styled.h1`
-  margin: 0 0 6px 0;
-  font-size: clamp(20px, 2.4vw, 26px);
-  font-weight: 700;
-  color: var(--text);
-  text-align: center;
+const LeftContent = styled.div`
+  position: relative;
+  z-index: 2;
+  animation: ${floatUp} 6s ease-in-out infinite;
 `;
 
-const Subtitle = styled.p`
-  margin: 0 0 18px 0;
-  text-align: center;
-  color: var(--muted);
-  font-size: clamp(13px, 1.8vw, 14px);
+const BrandBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 30px;
+  padding: 6px 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a5b4fc;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 18px;
 `;
 
-// Tab selector
+const Dot = styled.span`
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6366f1;
+  box-shadow: 0 0 8px #6366f1;
+`;
+
+const BrandTitle = styled.h1`
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  margin: 0 0 12px;
+  background: linear-gradient(135deg, #fff 30%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+`;
+
+const BrandSub = styled.p`
+  font-size: clamp(13px, 1.6vw, 16px);
+  color: rgba(148, 163, 184, 0.9);
+  line-height: 1.6;
+  margin: 0 0 28px;
+  max-width: 380px;
+`;
+
+const Features = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const FeatureItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: rgba(203, 213, 225, 0.85);
+  font-weight: 500;
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #06b6d4);
+    flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(99,102,241,0.6);
+  }
+`;
+
+// RIGHT PANEL ────────────────────────────────────────────────────────────────
+const RightPanel = styled.div`
+  flex: 0.9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: clamp(28px, 5vw, 56px) clamp(24px, 6vw, 64px);
+  background: #0f172a;
+  animation: ${slideInRight} 0.6s ease both;
+
+  @media (max-width: 768px) {
+    flex: none;
+    padding: 32px 24px 40px;
+  }
+`;
+
+const FormBox = styled.div`
+  width: 100%;
+  max-width: 400px;
+`;
+
+const WelcomeText = styled.div`
+  margin-bottom: 32px;
+`;
+
+const WelcomeTitle = styled.h2`
+  font-size: clamp(22px, 2.8vw, 30px);
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0 0 6px;
+`;
+
+const GradientUnderline = styled.span`
+  display: inline-block;
+  background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: ${shimmer} 4s linear infinite;
+`;
+
+const WelcomeSub = styled.p`
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+`;
+
+// Tabs
 const TabContainer = styled.div`
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  background: rgba(255,255,255,0.05);
+  gap: 6px;
+  margin-bottom: 26px;
+  background: rgba(255,255,255,0.04);
   padding: 4px;
   border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
 `;
 
 const Tab = styled.button`
   flex: 1;
-  padding: 10px 16px;
+  padding: 10px 14px;
   border: none;
-  border-radius: 10px;
-  background: ${props => props.$active ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%)' : 'transparent'};
-  color: ${props => props.$active ? '#fff' : 'var(--muted)'};
+  border-radius: 9px;
+  background: ${props => props.$active
+    ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)'
+    : 'transparent'};
+  color: ${props => props.$active ? '#fff' : '#64748b'};
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13.5px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: ${props => props.$active ? '0 4px 16px rgba(99,102,241,0.3)' : 'none'};
 
   &:hover {
-    background: ${props => props.$active ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%)' : 'rgba(255,255,255,0.05)'};
-    color: ${props => props.$active ? '#fff' : 'var(--text)'};
+    color: ${props => props.$active ? '#fff' : '#94a3b8'};
   }
 `;
 
-// Form layout
+// Form
 const Form = styled.form`
   display: grid;
-  gap: clamp(12px, 2vw, 16px);
+  gap: 18px;
 `;
 
 const Field = styled.div`
   position: relative;
   display: grid;
-  gap: 6px;
+  gap: 7px;
 `;
 
 const Label = styled.label`
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: var(--text);
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
 `;
 
-// Inputs with full width, accessible focus, mobile height
 const Input = styled.input`
   width: 100%;
-  height: clamp(48px, 6.5vh, 52px);
-  border: 1px solid rgba(255,255,255,0.12);
+  height: 50px;
+  border: 1px solid rgba(255,255,255,0.09);
   border-radius: 12px;
-  padding: 0 44px 0 14px;
-  background: rgba(255,255,255,0.06);
-  font-size: 15px;
-  color: var(--text);
+  padding: 0 46px 0 16px;
+  background: rgba(255,255,255,0.04);
+  font-size: 14.5px;
+  color: #f1f5f9;
   transition: 0.2s ease;
-  &::placeholder { color: var(--muted); }
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+
+  &::placeholder { color: #475569; }
   &:focus {
     outline: none;
-    border-color: var(--primary-2);
-    box-shadow: var(--ring);
-    background: rgba(255,255,255,0.10);
+    border-color: rgba(99,102,241,0.5);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    background: rgba(255,255,255,0.07);
   }
 `;
 
 const TogglePassword = styled.button`
   position: absolute;
-  right: 10px;
-  top: 34px;
+  right: 12px;
+  top: 38px;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: #475569;
   cursor: pointer;
-  &:hover { color: var(--text); }
+  transition: color 0.2s;
+  &:hover { color: #94a3b8; }
 `;
 
-// Primary submit with gradient in your brand hues
 const Submit = styled.button`
-  height: clamp(48px, 6.5vh, 52px);
+  height: 52px;
   border: 0;
   border-radius: 12px;
   color: #fff;
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-  background-image: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
-  box-shadow: 0 10px 24px rgba(99, 102, 241, 0.25);
-  transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
-  &:hover { transform: translateY(-1px); filter: brightness(1.02); }
-  &:active { transform: translateY(0); }
-  &:disabled { opacity: 0.7; cursor: not-allowed; }
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 60%, #06b6d4 100%);
+  background-size: 200% auto;
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.32);
+  transition: all 0.25s ease;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.4px;
+  animation: ${shimmer} 5s linear infinite;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.45);
+  }
+  &:active:not(:disabled) { transform: translateY(0); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
-const FingerprintInfo = styled.div`
-  background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%);
-  padding: 12px 16px;
-  border-radius: 10px;
-  margin-top: 12px;
+const DeviceCard = styled.div`
+  background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(6,182,212,0.06) 100%);
+  border: 1px solid rgba(99,102,241,0.2);
+  padding: 18px 20px;
+  border-radius: 14px;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #c4b5fd;
+  align-items: flex-start;
+  gap: 14px;
 `;
 
-const FingerprintText = styled.div`
-  font-size: 12px;
-  color: #4c1d95;
-  line-height: 1.4;
-  
+const DeviceIcon = styled.div`
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(99,102,241,0.15);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+`;
+
+const DeviceText = styled.div`
+  font-size: 12.5px;
+  color: #94a3b8;
+  line-height: 1.6;
+
   strong {
     display: block;
+    font-size: 13.5px;
+    color: #c7d2fe;
+    margin-bottom: 4px;
+  }
+  code {
+    background: rgba(99,102,241,0.15);
+    padding: 2px 8px;
+    border-radius: 6px;
     font-size: 13px;
-    margin-bottom: 2px;
+    color: #a5b4fc;
+    font-family: monospace;
   }
 `;
 
+const Divider = styled.div`
+  text-align: center;
+  margin: 20px 0 0;
+  font-size: 12px;
+  color: #334155;
+
+  span {
+    display: inline-block;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.18);
+    border-radius: 20px;
+    padding: 4px 14px;
+    color: #6366f1;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+`;
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 const Login = () => {
   const [loginMethod, setLoginMethod] = useState("password");
   const [form, setForm] = useState({ employee_id: "", password: "" });
+  const [fingerprint, setFingerprint] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [fingerprint, setFingerprint] = useState(null);
-  const [fingerprintLoading, setFingerprintLoading] = useState(false);
+  const [ipLoginLoading, setIpLoginLoading] = useState(false);
   const navigate = useNavigate();
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
 
-  // Get device fingerprint at mount
+  // Initialize Fingerprint
   useEffect(() => {
     const initFingerprint = async () => {
       try {
+        const FingerprintJS = (await import("@fingerprintjs/fingerprintjs")).default;
         const fp = await FingerprintJS.load();
         const result = await fp.get();
         setFingerprint(result.visitorId);
-      } catch (error) {
-        toast.error("Failed to generate device fingerprint");
+      } catch (err) {
+        console.error("Fingerprint initialization failed", err);
       }
     };
     initFingerprint();
@@ -241,12 +504,11 @@ const Login = () => {
   const onChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  // On password login, navigate to /register after success
   const onSubmitPassword = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.post(`${HRbaseurl}login/`, {
+      const { data } = await api.post("login/", {
         employee_id: form.employee_id,
         password: form.password,
       });
@@ -256,9 +518,10 @@ const Login = () => {
       localStorage.setItem("name", data.name);
       localStorage.setItem("role", data.role);
       localStorage.setItem("department", data.department);
+      localStorage.setItem("department_id", data.department_id);
+      localStorage.setItem("department_name", data.department_name);
       localStorage.setItem("employee_id", data.employee_id);
-
-      setTimeout(() => navigate("/register"), 1500); // Go to register page
+      setTimeout(() => navigate("/HRAction"), 1500);
     } catch (err) {
       const msg =
         err?.response?.data?.error ||
@@ -269,124 +532,165 @@ const Login = () => {
     }
   };
 
-  // On fingerprint login, navigate to / (root) after success
-  const onSubmitFingerprint = async (e) => {
+  const onSubmitIPLogin = async (e) => {
     e.preventDefault();
-    if (!fingerprint) {
-      toast.error("Device fingerprint not available");
-      return;
-    }
-    setFingerprintLoading(true);
+    setIpLoginLoading(true);
     try {
-      const { data } = await axios.post(`${HRbaseurl}fingerprint-login/`, {
-        fingerprint_id: fingerprint,
+      const { data } = await api.post("ip-login/", {
+        fingerprint: fingerprint
       });
-      toast.success("Fingerprint Login Successfully!", { autoClose: 2000 });
+      toast.success("Kiosk Access Granted!", { autoClose: 1000 });
       localStorage.setItem("device", data.device);
       localStorage.setItem("access_token", data.token);
       localStorage.setItem("name", data.name);
       localStorage.setItem("role", data.role);
-      setTimeout(() => navigate("/webcam"), 1500); // Go to home/dashboard
+      localStorage.setItem("department", data.department || "");
+      localStorage.setItem("department_id", data.department_id || "");
+      localStorage.setItem("department_name", data.department_name || "");
+      localStorage.setItem("employee_id", data.employee_id || "");
+      // Navigate immediately for "match and go" experience
+      navigate("/webcam");
     } catch (err) {
       const msg =
         err?.response?.data?.error ||
-        "Fingerprint not recognized. Please register your device first.";
-      toast.error(msg, { autoClose: 2500 });
+        "This device is not authorized for Kiosk Attendance.";
+      toast.error(msg, { autoClose: 3500 });
     } finally {
-      setFingerprintLoading(false);
+      setIpLoginLoading(false);
     }
   };
 
   return (
     <>
-      <GlobalStyle />
       <Page>
         <ToastContainer position="top-right" autoClose={2500} />
-        <Card>
-          <Title>Welcome back</Title>
-          <Subtitle>Please sign in to continue</Subtitle>
 
-          <TabContainer>
-            <Tab
-              $active={loginMethod === "password"}
-              onClick={() => setLoginMethod("password")}
-              type="button"
-            >
-              <FaEye size={16} />
-              Password
-            </Tab>
-            <Tab
-              $active={loginMethod === "fingerprint"}
-              onClick={() => setLoginMethod("fingerprint")}
-              type="button"
-            >
-              <FaFingerprint size={16} />
-              Fingerprint
-            </Tab>
-          </TabContainer>
+        {/* ── LEFT: Branding Panel ── */}
+        <LeftPanel>
+          {/* Animated blobs */}
+          <Blob1 />
+          <Blob2 />
+          <Blob3 />
+          {/* Spinning rings */}
+          <Ring1 />
+          <Ring2 />
+          <Ring3 />
+          {/* Gradient overlay toward bottom */}
+          <LeftOverlay />
+          <LeftContent>
+            <BrandBadge>
+              <Dot />
+              HR Management System
+            </BrandBadge>
+            <BrandTitle>Shanmuga<br />Innovation</BrandTitle>
+            <BrandSub>
+              Empower your workforce with intelligent HR tools — attendance,
+              rosters, shifts, and reports all in one place.
+            </BrandSub>
+            <Features>
+              <FeatureItem>Real-time Attendance Tracking</FeatureItem>
+              <FeatureItem>Smart Shift & Roster Management</FeatureItem>
+              <FeatureItem>Department-wise Analytics</FeatureItem>
+              <FeatureItem>Secure Role-based Access</FeatureItem>
+            </Features>
+          </LeftContent>
+        </LeftPanel>
 
-          {loginMethod === "password" ? (
-            <Form onSubmit={onSubmitPassword}>
-              <Field>
-                <Label htmlFor="employee_id">Employee ID</Label>
-                <Input
-                  id="employee_id"
-                  name="employee_id"
-                  type="text"
-                  placeholder="Enter your Employee ID"
-                  value={form.employee_id}
-                  onChange={onChange}
-                  autoComplete="username"
-                  required
-                />
-              </Field>
+        {/* ── RIGHT: Login Panel ── */}
+        <RightPanel>
+          <FormBox>
+            <WelcomeText>
+              <WelcomeTitle>
+                Welcome <GradientUnderline>back</GradientUnderline> 👋
+              </WelcomeTitle>
+              <WelcomeSub>Sign in to your HR account to continue</WelcomeSub>
+            </WelcomeText>
 
-              <Field>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={form.password}
-                  onChange={onChange}
-                  autoComplete="current-password"
-                  required
-                />
-                <TogglePassword
-                  type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((s) => !s)}
-                  title={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                </TogglePassword>
-              </Field>
+            <TabContainer>
+              <Tab
+                $active={loginMethod === "password"}
+                onClick={() => setLoginMethod("password")}
+                type="button"
+              >
+                <FaEye size={14} />
+                Password
+              </Tab>
+              <Tab
+                $active={loginMethod === "device"}
+                onClick={() => setLoginMethod("device")}
+                type="button"
+              >
+                <FaDesktop size={14} />
+                Kiosk Login
+              </Tab>
+            </TabContainer>
 
-              <Submit type="submit" disabled={loading}>
-                {loading ? "Signing in..." : "Log In"}
-              </Submit>
-            </Form>
-          ) : (
-            <Form onSubmit={onSubmitFingerprint}>
-              <FingerprintInfo>
-                <FaFingerprint size={32} color="#7c3aed" />
-                <FingerprintText>
-                  <strong>Device Fingerprint Login</strong>
-                  {fingerprint ? (
-                    <>Your device: {fingerprint.substring(0, 12)}...</>
-                  ) : (
-                    <>Generating device fingerprint...</>
-                  )}
-                </FingerprintText>
-              </FingerprintInfo>
+            {loginMethod === "password" ? (
+              <Form onSubmit={onSubmitPassword}>
+                <Field>
+                  <Label htmlFor="employee_id">Employee ID</Label>
+                  <Input
+                    id="employee_id"
+                    name="employee_id"
+                    type="text"
+                    placeholder="Enter your Employee ID"
+                    value={form.employee_id}
+                    onChange={onChange}
+                    autoComplete="username"
+                    required
+                  />
+                </Field>
 
-              <Submit type="submit" disabled={fingerprintLoading || !fingerprint}>
-                {fingerprintLoading ? "Authenticating..." : "Login with Fingerprint"}
-              </Submit>
-            </Form>
-          )}
-        </Card>
+                <Field>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={form.password}
+                    onChange={onChange}
+                    autoComplete="current-password"
+                    required
+                  />
+                  <TogglePassword
+                    type="button"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((s) => !s)}
+                  >
+                    {showPassword ? <FaEyeSlash size={17} /> : <FaEye size={17} />}
+                  </TogglePassword>
+                </Field>
+
+                <Submit type="submit" disabled={loading}>
+                  {loading ? "Signing in…" : "Sign In →"}
+                </Submit>
+              </Form>
+            ) : (
+              <Form onSubmit={onSubmitIPLogin}>
+                <DeviceCard>
+                  <DeviceIcon>
+                    <FaDesktop size={22} color="#818cf8" />
+                  </DeviceIcon>
+                  <DeviceText>
+                    <strong>Face Attendance Terminal</strong>
+                    Hardware fingerprint detected. Click below to verify and enter the attendance screen.
+                    <br />
+                    <em>(Registered devices only)</em>
+                  </DeviceText>
+                </DeviceCard>
+
+                <Submit type="submit" disabled={ipLoginLoading}>
+                  {ipLoginLoading ? "Authenticating…" : "Enter Face Attendance Mode →"}
+                </Submit>
+              </Form>
+            )}
+
+            <Divider>
+              <span>Shanmuga Innovation © {new Date().getFullYear()}</span>
+            </Divider>
+          </FormBox>
+        </RightPanel>
       </Page>
     </>
   );
