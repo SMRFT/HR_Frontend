@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import {
   LayoutGrid,
   UserPlus,
@@ -20,41 +20,6 @@ import {
   Clock,
   AlertTriangle
 } from 'lucide-react';
-
-// Global Styles
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
-  }
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; }
-  body {
-    margin: 0;
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-`;
 
 // Styled Components
 const SidebarContainer = styled.aside`
@@ -457,7 +422,8 @@ const menuItems = [
     section: 'Employee Management',
     items: [
       { path: '/register', icon: UserPlus, label: 'Register Employee' },
-      { path: '/user-register', icon: Users, label: 'Create User Login' }, // New Link
+      { path: '/user-register', icon: UserPlus, label: 'Add User Login' },
+      { path: '/user-management', icon: Users, label: 'Manage User Logins' },
       { path: '/HRAction', icon: Users, label: 'All Employees' },
     ]
   },
@@ -481,6 +447,7 @@ const menuItems = [
     items: [
       { path: '/webcam', icon: Camera, label: 'Kiosk Mode' },
       { path: '/Hrregister', icon: MonitorSmartphone, label: 'Device Registration' },
+      { path: '/registered-devices', icon: Settings, label: 'Device Management' },
     ]
   }
 ];
@@ -495,6 +462,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   // Get user info from localStorage
   const userName = localStorage.getItem('name') || 'User';
   const userRole = localStorage.getItem('role') || 'Guest';
+  const deptName = localStorage.getItem('department_name') || 'Unassigned';
 
   // Hide sidebar for Face Recognition page
   const shouldHideSidebar = location.pathname === '/webcam';
@@ -506,7 +474,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       if (userRole === 'Admin') return section;
 
       // For others, filter out restricted pages
-      const restrictedPaths = ['/register', '/webcam', '/Hrregister', '/user-register'];
+      const restrictedPaths = [
+        '/register', 
+        '/user-register', 
+        '/user-management', 
+        '/HRAction', 
+        '/Hrregister', 
+        '/registered-devices', 
+        '/webcam'
+      ];
       const filteredItems = section.items.filter(item => !restrictedPaths.includes(item.path));
 
       if (filteredItems.length === 0) return null;
@@ -549,7 +525,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
   return (
     <>
-      <GlobalStyle />
 
       {activeTooltip && isCollapsed && createPortal(
         <PortalTooltip style={{ top: activeTooltip.top, left: activeTooltip.left }}>
@@ -619,7 +594,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             </UserAvatar>
             <UserInfo $isCollapsed={isCollapsed}>
               <UserName>{userName}</UserName>
-              <UserRole>{userRole}</UserRole>
+              <UserRole>{userRole} • {deptName}</UserRole>
             </UserInfo>
           </UserSection>
 

@@ -1,43 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import axios from "axios";
-import styled, { createGlobalStyle, keyframes } from "styled-components";
-
-// --- START STYLED COMPONENTS ---
-
-// Global palette and dark gradient background
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
-  }
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; }
-  body {
-    margin: 0;
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-`;
+import api from "../api";
+import styled, { keyframes } from "styled-components";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
@@ -262,6 +225,37 @@ const EmployeeCell = styled.div`
   gap: 1rem;
 `;
 
+const ChipContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin: 10px clamp(1rem, 2vw, 1.5rem);
+`;
+
+const DeptChip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: ${props => props.selected ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
+  color: ${props => props.selected ? '#818cf8' : '#94a3b8'};
+  border: 1px solid ${props => props.selected ? 'rgba(99, 102, 241, 0.3)' : 'transparent'};
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.selected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    transform: translateY(-1px);
+  }
+`;
+
 const Avatar = styled.div`
   width: 56px;
   height: 56px;
@@ -461,6 +455,8 @@ const CloseButton = styled.button`
 
 export default function EmployeeHR() {
   const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepts, setSelectedDepts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -482,16 +478,18 @@ export default function EmployeeHR() {
       setError(null);
       setLoading(true);
       const role = localStorage.getItem('role');
-      const dept = localStorage.getItem('department');
+      const dept = localStorage.getItem('department_id');
       const params = {};
+
       if (role && role !== 'Admin' && dept) {
         params.department = dept;
+      } else if (selectedDepts.length > 0) {
+        params.department = selectedDepts.join(',');
       }
 
-      const res = await axios.get(
-        `${HRbaseurl}employees/`,
+      const res = await api.get(
+        "employees/",
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           params
         }
       );
@@ -502,11 +500,31 @@ export default function EmployeeHR() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [HRbaseurl, selectedDepts]);
 
   useEffect(() => {
     fetchEmployees();
-  }, [fetchEmployees]);
+  }, [fetchEmployees, selectedDepts]);
+
+  useEffect(() => {
+    const fetchDepts = async () => {
+      try {
+        const res = await api.get("departments/");
+        setDepartments(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Failed to fetch departments", err);
+      }
+    };
+    fetchDepts();
+  }, [HRbaseurl]);
+
+  const toggleDepartment = (deptId) => {
+    setSelectedDepts(prev =>
+      prev.includes(deptId)
+        ? prev.filter(id => id !== deptId)
+        : [...prev, deptId]
+    );
+  };
 
   const updateEmployeeStatus = useCallback((id, newStatus) => {
     setEmployees(prevEmployees =>
@@ -529,12 +547,9 @@ export default function EmployeeHR() {
       setProcessingId(employee_id);
       setError(null);
 
-      await axios.post(
-        `${HRbaseurl}employees/${employee_id}/enable_face/`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+      await api.post(
+        `employees/${employee_id}/enable_face/`,
+        {}
       );
 
       updateEmployeeStatus(employee_id, true);
@@ -551,12 +566,9 @@ export default function EmployeeHR() {
       setProcessingId(employee_id);
       setError(null);
 
-      await axios.post(
-        `${HRbaseurl}employees/${employee_id}/disable_face/`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+      await api.post(
+        `employees/${employee_id}/disable_face/`,
+        {}
       );
 
       updateEmployeeStatus(employee_id, false);
@@ -592,7 +604,6 @@ export default function EmployeeHR() {
 
   return (
     <>
-      <GlobalStyle />
       <Container>
         <Card>
           <Header>
@@ -630,14 +641,32 @@ export default function EmployeeHR() {
               />
             </SearchWrapper>
 
-            <FilterSelect
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">All Employees</option>
-              <option value="enabled">Enabled Only</option>
-              <option value="disabled">Disabled Only</option>
-            </FilterSelect>
+            {(localStorage.getItem('role') === 'Admin' || !localStorage.getItem('department_id')) && (
+              <FilterSelect
+                value={selectedDepts.length === 0 ? "all" : selectedDepts[0]}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedDepts(val === "all" ? [] : [val]);
+                }}
+              >
+                <option value="all">All Departments</option>
+                {departments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </FilterSelect>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem', marginLeft: 'auto' }}>
+
+              <FilterSelect
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Employees</option>
+                <option value="enabled">Enabled Only</option>
+                <option value="disabled">Disabled Only</option>
+              </FilterSelect>
+            </div>
           </FiltersBar>
 
           <StatsBar>

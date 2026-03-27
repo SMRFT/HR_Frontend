@@ -1,41 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import styled, { keyframes, createGlobalStyle } from 'styled-components';
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
-import illustration from '../assets/hr_platform_illustration.png';
+import styled, { keyframes } from 'styled-components';
 
-// Global palette and dark gradient background
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
-  }
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; }
-  body {
-    margin: 0;
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-`;
+import illustration from '../assets/hr_platform_illustration.png';
 
 // Floating animation for decorative elements
 const float = keyframes`
@@ -80,8 +47,8 @@ const Blob = styled.div`
 const Card = styled.div`
   display: flex;
   width: 100%;
-  max-width: 1100px;
-  min-height: 620px;
+  max-width: 1000px;
+  min-height: 580px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
@@ -116,7 +83,7 @@ const ImageSection = styled.div`
   }
 
   @media (max-width: 900px) { 
-    height: 240px;
+    height: 200px;
   }
 `;
 
@@ -154,7 +121,7 @@ const ImageSubtitle = styled.p`
 
 const Illustration = styled.img`
   width: 100%;
-  max-width: 300px;
+  max-width: 260px;
   height: auto;
   margin-bottom: 2rem;
   filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
@@ -176,7 +143,7 @@ const FormSection = styled.div`
 `;
 
 const FormHeader = styled.div`
-  margin-bottom: 1.6rem;
+  margin-bottom: 2rem;
   text-align: center;
 `;
 
@@ -197,21 +164,10 @@ const Form = styled.form`
   width: 100%;
 `;
 
-const FormGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
-  margin-bottom: 1.2rem;
-
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-`;
-
 const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
+  margin-bottom: 1.5rem;
 `;
 
 const Label = styled.label`
@@ -219,10 +175,6 @@ const Label = styled.label`
   font-weight: 600;
   color: var(--text);
   margin-bottom: 0.45rem;
-`;
-
-const InputWrap = styled.div`
-  position: relative;
 `;
 
 const Input = styled.input`
@@ -246,85 +198,25 @@ const Input = styled.input`
   &::placeholder {
     color: rgba(148,163,184,0.6);
   }
-`;
 
-const Select = styled.select`
-  width: 100%;
-  height: 50px;
-  background-color: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: var(--radius-sm);
-  padding: 0 1rem;
-  font-size: 0.95rem;
-  color: var(--text);
-  transition: var(--transition);
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 1em;
-
-  &:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(34,211,238,0.15);
-    background-color: rgba(255,255,255,0.10);
-  }
-
-  option {
-    background: var(--bg2);
-    color: var(--text);
-  }
-`;
-
-const ToggleBtn = styled.button`
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: var(--transition);
-
-  &:hover {
-    color: var(--text);
-    background: rgba(255,255,255,0.08);
-  }
-`;
-
-const Meter = styled.div`
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.10);
-  overflow: hidden;
-  margin-top: 0.5rem;
-
-  & > span {
-    display: block;
-    height: 100%;
-    width: ${p => p.width || 0}%;
-    background: ${p => p.bg || 'rgba(255,255,255,0.10)'};
-    transition: width 0.25s ease;
+  &:read-only {
+    background-color: rgba(0,0,0,0.2);
+    color: var(--muted);
+    cursor: default;
   }
 `;
 
 const SubmitButton = styled.button`
   width: 100%;
   height: 52px;
-  margin-top: 0.4rem;
+  margin-top: 1rem;
   border: none;
   border-radius: var(--radius-sm);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  background-image: linear-gradient(135deg, var(--primary-2) 0%, var(--accent) 100%);
+  background-image: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   box-shadow: 0 10px 24px rgba(139,92,246,0.25);
   transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
 
@@ -340,12 +232,11 @@ const SubmitButton = styled.button`
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
-    filter: grayscale(12%);
   }
 `;
 
 const Message = styled.div`
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   padding: 1rem;
   text-align: center;
   border-radius: var(--radius-sm);
@@ -356,78 +247,91 @@ const Message = styled.div`
   font-weight: 500;
 `;
 
-// Component
-const Register = () => {
+const DeviceRegistration = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    password: '',
-    confirmPassword: '',
-    fingerprint_id: '',
-    device: '',
+    device_name: '',
+    fingerprint: '',
+    ip_address: '',
+    admin_password: '',
   });
-  const [showPass, setShowPass] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Default role is always "HR"
-  // const [role, setRole] = useState('HR');
-
+  const [existingDevices, setExistingDevices] = useState([]);
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
 
-  // On mount, get fingerprint
+  const fetchExisting = async () => {
+    try {
+      const res = await axios.get(`${HRbaseurl}allowed-devices/`, {
+        headers: { 'X-User-Role': localStorage.getItem('role') }
+      });
+      setExistingDevices(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch existing devices", err);
+    }
+  };
+
+  // Initialize Fingerprint
   useEffect(() => {
-    const getFingerprint = async () => {
-      const fp = await FingerprintJS.load();
-      const result = await fp.get();
-      setFormData(prev => ({ ...prev, fingerprint_id: result.visitorId }));
+    const initFingerprint = async () => {
+      try {
+        const FingerprintJS = (await import("@fingerprintjs/fingerprintjs")).default;
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+        setFormData(prev => ({ ...prev, fingerprint: result.visitorId }));
+      } catch (err) {
+        console.error("Fingerprint initialization failed", err);
+      }
     };
-    getFingerprint();
-  }, []);
+    initFingerprint();
+    fetchExisting();
+  }, [HRbaseurl]);
+
+  // Fetch Device IP
+  useEffect(() => {
+    const getDeviceIP = async () => {
+      try {
+        const res = await axios.get(`${HRbaseurl}my-ip/`);
+        setFormData(prev => ({ ...prev, ip_address: res.data.ip }));
+      } catch (err) {
+        console.error("Failed to fetch device IP", err);
+      }
+    };
+    if (HRbaseurl) getDeviceIP();
+  }, [HRbaseurl]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const strength = (() => {
-    const p = formData.password || '';
-    let score = 0;
-    if (p.length >= 8) score += 25;
-    if (/[A-Z]/.test(p)) score += 25;
-    if (/[0-9]/.test(p)) score += 25;
-    if (/[^A-Za-z0-9]/.test(p)) score += 25;
-    const bg = score < 50 ? '#ef4444' : score < 75 ? '#f59e0b' : '#22c55e';
-    return { score, bg };
-  })();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setMessage('Passwords do not match');
-      setSuccess(false);
-      return;
-    }
     setLoading(true);
+    setMessage('');
     try {
       const requestData = {
-        name: formData.name,
-        role: "HR", // Default
-        password: formData.password,
-        confirmPassword: formData.confirmPassword,
-        fingerprint_id: formData.fingerprint_id,
-        device: formData.device,
+        label: formData.device_name,
+        fingerprint: formData.fingerprint,
+        ip_address: formData.ip_address,
+        password: formData.admin_password,
       };
-      await axios.post(
-        `${HRbaseurl}hrregistration/`,
+      
+      const response = await axios.post(
+        `${HRbaseurl}register-device/`,
         requestData
       );
-      setMessage('Registration successful!');
+      
+      setMessage(response.data.message || 'Device registered successfully!');
       setSuccess(true);
-      setFormData({ name: '', password: '', confirmPassword: '', fingerprint_id: formData.fingerprint_id, device: '' });
+      setFormData(prev => ({
+        ...prev,
+        device_name: '',
+        admin_password: ''
+      }));
     } catch (error) {
       setMessage(
-        error?.response?.data?.error || 'Registration failed. Please try again.'
+        error?.response?.data?.error || 'Failed to register device. Check your account password.'
       );
       setSuccess(false);
     } finally {
@@ -436,154 +340,110 @@ const Register = () => {
   };
 
   return (
-    <>
-      <GlobalStyle />
-      <PageContainer>
-        {/* <-- Place your Blob, Card, ImageSection etc styled-components here just like your original design --> */}
-        <Blob
-          size={420}
-          blur={80}
-          opacity={0.35}
-          top="5%"
-          left="65%"
-          bg="linear-gradient(135deg,#7c5cff,#22d3ee)"
-          speed={16}
-        />
-        <Blob
-          size={360}
-          blur={70}
-          opacity={0.30}
-          top="75%"
-          left="5%"
-          bg="linear-gradient(135deg,#f472b6,#7c5cff)"
-          speed={18}
-        />
-        <Card>
-          <ImageSection>
-            <ContentOverlay>
-              <Illustration src={illustration} alt="Platform Illustration" />
-              <ImageTitle>Join Our Platform</ImageTitle>
-              <ImageSubtitle>
-                Create your account and unlock access to powerful tools and features
-              </ImageSubtitle>
-            </ContentOverlay>
-          </ImageSection>
-          <FormSection>
-            <FormHeader>
-              <Title>Device Registration</Title>
-              <Subtitle>
-                Please fill in the form to register
-              </Subtitle>
-            </FormHeader>
-            <Form onSubmit={handleSubmit}>
-              <FormGrid>
-                <FormGroup>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    name="name"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </FormGroup>
+    <PageContainer>
+      <Blob size={420} blur={80} opacity={0.35} top="5%" left="65%" bg="linear-gradient(135deg,#7c5cff,#22d3ee)" speed={16} />
+      <Blob size={360} blur={70} opacity={0.30} top="75%" left="5%" bg="linear-gradient(135deg,#f472b6,#10b981)" speed={18} />
+      
+      <Card>
+        <ImageSection>
+          <ContentOverlay>
+            <Illustration src={illustration} alt="Kiosk Illustration" />
+            <ImageTitle>Device Activation</ImageTitle>
+            <ImageSubtitle>
+              Securely whitelist this device to enable face recognition attendance within your local network. Any registered user can activate a new terminal.
+            </ImageSubtitle>
+          </ContentOverlay>
+        </ImageSection>
 
-                <FormGroup>
-                  <Label htmlFor="role">Role (fixed)</Label>
-                  <Input
-                    disabled
-                    value="HR"
-                    name="role"
-                    style={{ background: "#22223b", color: "#fff", fontWeight: 600 }}
-                    readOnly
-                  />
-                </FormGroup>
+        <FormSection>
+          <FormHeader>
+            <Title>Setup Device</Title>
+            <Subtitle>Whitelist this terminal for attendance</Subtitle>
+          </FormHeader>
 
-                <FormGroup>
-                  <Label htmlFor="device">Device Name</Label>
-                  <Select
-                    id="device"
-                    name="device"
-                    value={formData.device}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="" disabled>Select Device</option>
-                    <option value="Master_Health_Checkup_001">Master_Health_Checkup_001</option>
-                    <option value="HR_Office_PC_001">HR_Office_PC_001</option>
-                  </Select>
-                </FormGroup>
+          <Form onSubmit={handleSubmit}>
+            <FormGroup>
+              <Label htmlFor="device_name">Device Name / Label</Label>
+              <Input
+                id="device_name"
+                name="device_name"
+                placeholder="e.g. Reception Kiosk, Floor 2 Tablet"
+                value={formData.device_name}
+                onChange={handleChange}
+                required
+              />
+            </FormGroup>
 
-                <FormGroup>
-                  <Label>Device Fingerprint ID</Label>
-                  <Input
-                    name="fingerprint_id"
-                    value={formData.fingerprint_id}
-                    readOnly
-                    style={{ background: "#f1f5f9", color: "#0f172a", fontFamily: "monospace" }}
-                  />
-                </FormGroup>
+            <FormGroup>
+              <Label>Device Fingerprint</Label>
+              <Input
+                name="fingerprint"
+                value={formData.fingerprint}
+                readOnly
+                placeholder="Generating ID..."
+                style={{ fontFamily: 'monospace', color: 'var(--accent)' }}
+              />
+            </FormGroup>
 
-                <FormGroup>
-                  <Label htmlFor="password">Password</Label>
-                  <InputWrap>
-                    <Input
-                      id="password"
-                      type={showPass ? 'text' : 'password'}
-                      name="password"
-                      placeholder="Create a password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                    />
-                    <ToggleBtn
-                      type="button"
-                      onClick={() => setShowPass((s) => !s)}
-                    >
-                      {showPass ? 'Hide' : 'Show'}
-                    </ToggleBtn>
-                  </InputWrap>
-                  <Meter width={strength.score} bg={strength.bg}>
-                    <span />
-                  </Meter>
-                </FormGroup>
+            <FormGroup>
+              <Label>Terminal IP Address</Label>
+              <Input
+                name="ip_address"
+                value={formData.ip_address}
+                readOnly
+                placeholder="Detecting IP..."
+                style={{ fontFamily: 'monospace' }}
+              />
+            </FormGroup>
 
-                <FormGroup>
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <InputWrap>
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirm ? 'text' : 'password'}
-                      name="confirmPassword"
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                    />
-                    <ToggleBtn
-                      type="button"
-                      onClick={() => setShowConfirm((s) => !s)}
-                    >
-                      {showConfirm ? 'Hide' : 'Show'}
-                    </ToggleBtn>
-                  </InputWrap>
-                </FormGroup>
-              </FormGrid>
+            <FormGroup>
+              <Label htmlFor="admin_password">Account Verification Password</Label>
+              <Input
+                id="admin_password"
+                type="password"
+                name="admin_password"
+                placeholder="Enter your login password to authorize"
+                value={formData.admin_password}
+                onChange={handleChange}
+                required
+              />
+            </FormGroup>
 
-              <SubmitButton type="submit" disabled={loading}>
-                {loading ? 'Creating...' : 'Create Account'}
-              </SubmitButton>
-            </Form>
-            <Message visible={message !== ''} success={success}>
-              {message}
-            </Message>
-          </FormSection>
-        </Card>
-      </PageContainer>
-    </>
+            <SubmitButton type="submit" disabled={loading}>
+              {loading ? 'Processing...' : 'Whitelist This Device'}
+            </SubmitButton>
+          </Form>
+
+          <Message visible={!!message} success={success}>
+            {message}
+          </Message>
+
+          {existingDevices.length > 0 && (
+            <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', color: 'var(--text)' }}>Recently Registered Devices</h3>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '5px' }}>
+                {existingDevices.slice(0, 5).map(device => (
+                  <div key={device.id} style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    padding: '8px 12px', 
+                    background: 'rgba(255,255,255,0.03)', 
+                    borderRadius: '8px',
+                    marginBottom: '6px',
+                    fontSize: '12px',
+                    border: '1px solid rgba(255,255,255,0.05)'
+                  }}>
+                    <span style={{ fontWeight: '600' }}>{device.label}</span>
+                    <span style={{ color: 'var(--muted)', fontFamily: 'monospace' }}>{device.ip_address}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </FormSection>
+      </Card>
+    </PageContainer>
   );
 };
 
-export default Register;
+export default DeviceRegistration;

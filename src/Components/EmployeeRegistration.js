@@ -1,43 +1,7 @@
 import React, { useRef, useState, useMemo } from "react";
 import Webcam from "react-webcam";
 import axios from "axios";
-import styled, { createGlobalStyle } from "styled-components";
-
-// Global styles (gradient bg + font smoothing)
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --card-glass: rgba(255,255,255,0.10);
-    --card-border: rgba(255,255,255,0.35);
-    --shadow: 0 10px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --radius-lg: 20px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
-  }
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; }
-  body {
-    margin: 0;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  }
-`;
+import styled from "styled-components";
 
 // Layout
 const Container = styled.div`
@@ -167,15 +131,15 @@ const Controls = styled.div`
 
 const Button = styled.button`
   appearance: none;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.25));
-  color: var(--text);
-  padding: 10px 14px;
+  border: none;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #fff;
+  padding: 12px 20px;
   border-radius: 12px;
   font-weight: 600;
-  letter-spacing: .2px;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
   &:hover { transform: translateY(-1px); }
   &:active { transform: translateY(0); }
   &:disabled {
@@ -188,13 +152,13 @@ const GhostButton = styled(Button)`
 `;
 
 const DangerButton = styled(Button)`
-  background: linear-gradient(135deg, rgba(239,68,68,0.25), rgba(248,113,113,0.28));
-  border-color: rgba(239,68,68,0.4);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 `;
 
 const SuccessButton = styled(Button)`
-  background: linear-gradient(135deg, rgba(16,185,129,0.28), rgba(45,212,191,0.28));
-  border-color: rgba(16,185,129,0.45);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 `;
 
 // Footer actions
@@ -224,6 +188,8 @@ export default function Register() {
   const [form, setForm] = useState({ employee_id: "", name: "" });
   const [imgSrc, setImgSrc] = useState(null); // captured base64
   const [loading, setLoading] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [existingEmployee, setExistingEmployee] = useState(null);
   const [facingMode, setFacingMode] = useState("user"); // 'user' | 'environment'
   const mirrored = facingMode === "user";
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
@@ -233,6 +199,33 @@ export default function Register() {
     width: { ideal: 1280 },
     height: { ideal: 720 },
   }), [facingMode]);
+
+  // Lookup employee when ID changes
+  React.useEffect(() => {
+    const fetchEmployee = async () => {
+      const eid = form.employee_id.trim();
+      if (!eid) {
+        setExistingEmployee(null);
+        return;
+      }
+
+      try {
+        setLookupLoading(true);
+        const res = await axios.get(`${HRbaseurl}employees/${eid}/`);
+        setExistingEmployee(res.data);
+        // Auto-fill name if it's currently empty or belongs to previous lookup
+        setForm(prev => ({ ...prev, name: res.data.name }));
+      } catch (err) {
+        setExistingEmployee(null);
+        // If not found, we don't necessarily want to clear the name if user is typing a new one
+      } finally {
+        setLookupLoading(false);
+      }
+    };
+
+    const timer = setTimeout(fetchEmployee, 600); // debounce
+    return () => clearTimeout(timer);
+  }, [form.employee_id, HRbaseurl]);
 
   const capture = () => {
     if (!webcamRef.current) return;
@@ -246,6 +239,22 @@ export default function Register() {
   const flipCamera = () => {
     setImgSrc(null);
     setFacingMode((m) => (m === "user" ? "environment" : "user"));
+  };
+
+  const handleApprove = async () => {
+    if (!existingEmployee) return;
+    try {
+      setLoading(true);
+      await axios.post(`${HRbaseurl}employees/${existingEmployee.employee_id}/enable_face/`);
+      alert("✅ Employee approved successfully!");
+      // Refresh lookup
+      const res = await axios.get(`${HRbaseurl}employees/${existingEmployee.employee_id}/`);
+      setExistingEmployee(res.data);
+    } catch (err) {
+      alert("❌ Failed to approve employee");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
@@ -276,6 +285,7 @@ export default function Register() {
         JSON.stringify(err.response?.data) ||
         "Registration failed";
       alert(`❌ ${msg}`);
+      setImgSrc(null);
     } finally {
       setLoading(false);
     }
@@ -285,7 +295,6 @@ export default function Register() {
 
   return (
     <>
-      <GlobalStyle />
       <Container>
         <Card>
           <Header>
@@ -311,7 +320,45 @@ export default function Register() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </Field>
-              <Chip>Enter ID to Register New or Update Existing</Chip>
+              <Chip>
+                {lookupLoading ? "Checking ID..." : (
+                  existingEmployee 
+                    ? (existingEmployee.is_registered_face ? "Employee Registered in HR" : "Found in Global Profile")
+                    : "Enter ID to Register New or Update Existing"
+                )}
+              </Chip>
+
+              {existingEmployee && (
+                <div style={{ marginTop: 20 }}>
+                  <PanelTitle>
+                    {existingEmployee.is_registered_face ? "Current Registered Image (HR)" : "Global Profile Image"}
+                  </PanelTitle>
+                  <CameraWrap style={{ height: 200, background: 'rgba(0,0,0,0.2)', border: existingEmployee.is_registered_face ? '2px solid var(--ok)' : '2px dashed var(--muted)' }}>
+                    {existingEmployee.image_preview ? (
+                      <img src={existingEmployee.image_preview} alt="Existing" style={{ objectFit: 'contain' }} />
+                    ) : (
+                      <div style={{ color: 'var(--muted)', fontSize: 12 }}>No image registered</div>
+                    )}
+                  </CameraWrap>
+                  <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <Chip style={{ borderColor: existingEmployee.is_active ? 'var(--ok)' : 'var(--err)', color: existingEmployee.is_active ? 'var(--ok)' : 'var(--err)' }}>
+                        {existingEmployee.is_active ? "Status: Active" : "Status: Inactive"}
+                      </Chip>
+                    </div>
+                    {!existingEmployee.is_active && existingEmployee.is_registered_face && (
+                      <SuccessButton onClick={handleApprove} disabled={loading}>
+                        Approve Now
+                      </SuccessButton>
+                    )}
+                  </div>
+                  {existingEmployee.message && !existingEmployee.is_registered_face && (
+                    <div style={{ fontSize: '11px', color: 'var(--accent)', marginTop: '8px', fontWeight: 600 }}>
+                      ℹ️ {existingEmployee.message}
+                    </div>
+                  )}
+                </div>
+              )}
             </Panel>
 
             <div>

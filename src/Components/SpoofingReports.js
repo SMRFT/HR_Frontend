@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import {
   AlertTriangle,
   Trash2,
@@ -10,19 +10,8 @@ import {
   Calendar
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
-
-// --- Styles Reuse ---
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #ef4444; /* Red for danger/spoofing */
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --border: rgba(255,255,255,0.1);
-    --radius: 16px;
-  }
-`;
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -112,6 +101,67 @@ const ActionBtn = styled.button`
   &:disabled {
     opacity: 0.5;
     cursor: default;
+  }
+`;
+
+const DatePickerWrapper = styled.div`
+  .custom-date-input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    width: 100px;
+    outline: none;
+    cursor: pointer;
+    text-align: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: rgba(255,255,255,0.05);
+    }
+  }
+
+  .react-datepicker {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-family: inherit;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+
+  .react-datepicker__header {
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    padding-top: 12px;
+  }
+
+  .react-datepicker__current-month,
+  .react-datepicker__day-name {
+    color: var(--text);
+  }
+
+  .react-datepicker__day {
+    color: var(--text);
+    border-radius: 8px;
+    
+    &:hover {
+      background: var(--primary);
+      color: white;
+    }
+  }
+
+  .react-datepicker__day--selected,
+  .react-datepicker__day--in-range {
+    background: var(--primary) !important;
+    color: white !important;
+  }
+
+  .react-datepicker__day--disabled {
+    color: var(--muted);
+    opacity: 0.3;
   }
 `;
 
@@ -214,18 +264,32 @@ export default function SpoofingReports() {
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  
+  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [endDate, setEndDate] = useState(new Date());
+
   const [previewImage, setPreviewImage] = useState(null);
 
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
 
   const fetchData = async () => {
-    setLoading(true);
+    const ymd = (d) => {
+      if (!d) return null;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     try {
+      setLoading(true);
       const role = localStorage.getItem('role');
-      const dept = localStorage.getItem('department');
-      const params = { month: filterMonth, year: filterYear };
+      const dept = localStorage.getItem('department_id');
+      
+      const from_date = ymd(startDate);
+      const to_date = endDate ? ymd(new Date(endDate.getTime() + 86400000)) : ymd(startDate);
+      
+      const params = { from_date, to_date };
 
       if (role && role !== 'Admin' && dept) {
         params.department = dept;
@@ -244,7 +308,7 @@ export default function SpoofingReports() {
 
   useEffect(() => {
     fetchData();
-  }, [filterMonth, filterYear]);
+  }, [startDate, endDate]);
 
   // Handlers
   const handleSelectAll = () => {
@@ -292,7 +356,6 @@ export default function SpoofingReports() {
 
   return (
     <>
-      <GlobalStyle />
       <ToastContainer position="top-right" theme="dark" />
 
       {previewImage && (
@@ -315,18 +378,27 @@ export default function SpoofingReports() {
 
           <Toolbar>
             {/* Filters */}
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginRight: 'auto' }}>
-              <Calendar size={18} color="var(--muted)" />
-              <FilterSelect value={filterMonth} onChange={e => setFilterMonth(Number(e.target.value))}>
-                {months.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
-              </FilterSelect>
-              <FilterSelect value={filterYear} onChange={e => setFilterYear(Number(e.target.value))}>
-                {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
-              </FilterSelect>
-              <ActionBtn onClick={fetchData} disabled={loading}>
-                <RefreshCw size={16} className={loading ? 'spin' : ''} />
-                Refresh
-              </ActionBtn>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginRight: 'auto' }}>
+                <Calendar size={18} color="var(--muted)" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.2)', padding: '4px 12px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                    <DatePicker
+                        selectsRange={true}
+                        startDate={startDate}
+                        endDate={endDate}
+                        onChange={(update) => {
+                            const [start, end] = update;
+                            setStartDate(start);
+                            setEndDate(end);
+                        }}
+                        dateFormat="dd MMM yyyy"
+                        className="custom-date-input"
+                        placeholderText="Select date range"
+                    />
+                </div>
+                <ActionBtn onClick={fetchData} disabled={loading}>
+                    <RefreshCw size={16} className={loading ? 'spin' : ''} />
+                    Refresh
+                </ActionBtn>
             </div>
 
             {/* Actions */}

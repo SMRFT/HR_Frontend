@@ -1,34 +1,7 @@
 import React, { useEffect, useState } from "react";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
-import styled, { createGlobalStyle } from "styled-components";
+import styled from "styled-components";
 import { Copy, Check } from "lucide-react";
-
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-  }
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; }
-  body {
-    margin: 0;
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-  }
-`;
 
 const Container = styled.div`
   min-height: 100vh;
@@ -116,7 +89,6 @@ export default function DeviceIdentifier() {
 
   return (
     <>
-      <GlobalStyle />
       <Container>
         <Card>
           <Title>Device Identifier</Title>
@@ -124,10 +96,46 @@ export default function DeviceIdentifier() {
             {deviceId || "Generating..."}
           </CodeBox>
           {deviceId && (
-            <Button onClick={handleCopy}>
-              {copied ? <Check size={18} /> : <Copy size={18} />}
-              {copied ? "Copied!" : "Copy ID"}
-            </Button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+              <Button onClick={handleCopy}>
+                {copied ? <Check size={18} /> : <Copy size={18} />}
+                {copied ? "Copied!" : "Copy ID"}
+              </Button>
+              
+              <Button 
+                onClick={async () => {
+                  try {
+                    const label = prompt("Enter a label for this device (e.g. Kiosk 1):", "Kiosk");
+                    if (!label) return;
+                    
+                    const response = await fetch(`${process.env.REACT_APP_BACKEND_HR_BASE_URL}allowed-devices/`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Role': 'Admin' // Assuming the person using this is an admin or we bypass for this specific action
+                      },
+                      body: JSON.stringify({
+                        label: label,
+                        fingerprint: deviceId,
+                        requester_role: 'Admin'
+                      })
+                    });
+                    
+                    const data = await response.json();
+                    if (response.ok) {
+                      alert("Device Registered Successfully!");
+                    } else {
+                      alert("Error: " + (data.error || "Failed to register"));
+                    }
+                  } catch (err) {
+                    alert("Failed to connect to server");
+                  }
+                }}
+                style={{ background: 'var(--accent)', color: '#000' }}
+              >
+                Register this Device
+              </Button>
+            </div>
           )}
         </Card>
       </Container>

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import './App.css';
+import GlobalStyle from './styles/globalStyles';
 import Login from './Components/Login';
 import EmployeeRegistration from './Components/EmployeeRegistration';
 import KioskAttendance from './Components/KioskAttendance';
@@ -16,7 +17,9 @@ import Sidebar from './Components/Sidebar';
 import ShiftManagement from './Components/ShiftManagement';
 import RosterReport from './Components/RosterReport';
 import UserRegistration from './Components/UserRegistration';
+import UserManagement from './Components/UserManagement';
 import RosterAttendanceReport from './Components/RosterAttendanceReport';
+import RegisteredDevices from './Components/RegisteredDevices';
 import { useLocation } from 'react-router-dom';
 
 
@@ -46,17 +49,18 @@ const ContentWrapper = styled.div`
   min-height: 100vh;
 `;
 
-// Protected Routes Component
+// Protected Routes Component (Requires Login)
 function ProtectedLayout({ children }) {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const noSidebar = location.pathname === '/webcam';
 
   // Authentication check
-  const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+  const token = localStorage.getItem("access_token");
 
   if (!token) {
-    return <Navigate to="/" replace />;
+    // Redirect to login if not authenticated
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   return (
@@ -71,12 +75,29 @@ function ProtectedLayout({ children }) {
   );
 }
 
+// Public Routes Component (Redirects to dashboard if already logged in)
+function PublicRoute({ children }) {
+  const token = localStorage.getItem("access_token");
+  
+  if (token) {
+    // Redirect to dashboard if already authenticated
+    return <Navigate to="/HRAction" replace />;
+  }
+
+  return children;
+}
+
 function App() {
   return (
     <Router basename="/HR">
+      <GlobalStyle />
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } />
 
         {/* Protected Routes with Conditional Sidebar */}
         <Route path="/webcam" element={
@@ -102,6 +123,11 @@ function App() {
           </ProtectedLayout>
         } />
         <Route path="/HRAction" element={
+          <ProtectedLayout>
+            <EmployeeManagement />
+          </ProtectedLayout>
+        } />
+        <Route path="/hraction" element={
           <ProtectedLayout>
             <EmployeeManagement />
           </ProtectedLayout>
@@ -153,6 +179,18 @@ function App() {
         <Route path="/roster-attendance-report" element={
           <ProtectedLayout>
             <RosterAttendanceReport />
+          </ProtectedLayout>
+        } />
+
+        <Route path="/user-management" element={
+          <ProtectedLayout>
+            <UserManagement />
+          </ProtectedLayout>
+        } />
+        
+        <Route path="/registered-devices" element={
+          <ProtectedLayout>
+            <RegisteredDevices />
           </ProtectedLayout>
         } />
 

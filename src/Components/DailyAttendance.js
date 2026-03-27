@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
-import styled, { createGlobalStyle } from 'styled-components';
+import api from '../api';
+import styled from 'styled-components';
 import {
   Users,
   Clock,
@@ -12,27 +12,12 @@ import {
   ArrowDownLeft,
   Calendar,
   Filter,
-  ArrowUpDown
+  ArrowUpDown,
+  Search as SearchIcon,
+  Download
 } from 'lucide-react';
-
-// --- Styles (Consistent with AttendanceReport) ---
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(30, 41, 59, 0.7);
-    --border: rgba(255,255,255,0.1);
-    --radius: 16px;
-  }
-`;
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -147,28 +132,36 @@ const LeftToolbar = styled.div`
 `;
 
 const DatePickerWrapper = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: rgba(0,0,0,0.2);
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  
-  input {
-      background: transparent;
-      border: none;
-      color: var(--text);
-      font-size: 14px;
-      padding: 8px;
-      outline: none;
-      
-      &::-webkit-calendar-picker-indicator {
-        filter: invert(1);
-        cursor: pointer;
-      }
+  .react-datepicker-wrapper {
+    width: auto;
   }
 `;
+
+const CustomDateInput = React.forwardRef(({ value, onClick, label }, ref) => (
+  <div
+    onClick={onClick}
+    ref={ref}
+    style={{
+      background: 'rgba(0,0,0,0.2)',
+      padding: '10px 16px',
+      border: '1px solid var(--border)',
+      borderRadius: '10px',
+      color: 'var(--text)',
+      fontSize: '14px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      minWidth: '160px'
+    }}
+  >
+    <Calendar size={18} color="var(--primary)" />
+    <div>
+      <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700 }}>{label}</div>
+      {value || "Select Date"}
+    </div>
+  </div>
+));
 
 
 const SearchBox = styled.div`
@@ -216,30 +209,98 @@ const SelectBox = styled.select`
 `;
 
 const RefreshBtn = styled.button`
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
+  background: var(--bg2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    filter: brightness(1.1);
+    background: var(--border);
+    transform: translateY(-1px);
   }
-  
+
   &:disabled {
-    opacity: 0.7;
-    cursor: default;
+    opacity: 0.5;
+    cursor: not-allowed;
   }
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const ChipContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  width: 100%;
+`;
+
+const DeptChip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: ${props => props.selected ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
+  color: ${props => props.selected ? '#818cf8' : '#94a3b8'};
+  border: 1px solid ${props => props.selected ? 'rgba(99, 102, 241, 0.3)' : 'transparent'};
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.selected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    transform: translateY(-1px);
+  }
+`;
+
+/* Top-scroll: flip outer so scrollbar appears at top */
+const TableWrapper = styled.div`
+  transform: rotateX(180deg);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar { height: 8px; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.25);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+  }
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.25) rgba(255,255,255,0.05);
+`;
+
+/* Counter-flip so content renders normally */
+const TableInner = styled.div`
+  transform: rotateX(180deg);
+  padding: clamp(12px, 2vw, 20px);
 `;
 
 const Table = styled.table`
   width: 100%;
+  min-width: 900px;
   border-collapse: collapse;
 `;
 
@@ -351,42 +412,49 @@ export default function DailyAttendance() {
   const [loading, setLoading] = useState(false);
 
   // State for Filters & Sorting
-  const [selectedDate, setSelectedDate] = useState(() => {
-    return new Date().toISOString().split('T')[0];
-  });
+  const [fromDate, setFromDate] = useState(new Date());
+  const [toDate, setToDate] = useState(new Date());
   const [search, setSearch] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('All');
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepts, setSelectedDepts] = useState([]);
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortConfig, setSortConfig] = useState({ key: 'firstIn', direction: 'asc' });
+
+  const role = (localStorage.getItem('role') || '').toLowerCase();
+  const userDeptId = localStorage.getItem('department_id');
+  const userDeptName = (localStorage.getItem('department_name') || '').toLowerCase();
 
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Logic: From SelectedDate 00:00 to Next Day 00:00
-      const start = new Date(selectedDate);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(start);
-      end.setDate(end.getDate() + 1);
-
-      const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-      const role = localStorage.getItem('role');
-      const dept = localStorage.getItem('department');
-      const params = {
-        from_date: ymd(start),
-        to_date: ymd(end)
+      const ymd = (d) => {
+        if (!d) return null;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
       };
 
-      if (role && role !== 'Admin' && dept) {
-        params.department = dept;
+      const params = {
+        from_date: ymd(fromDate),
+        to_date: ymd(toDate || fromDate)
+      };
+
+      const uRole = (localStorage.getItem('role') || '').toLowerCase();
+      const uDept = localStorage.getItem('department_id') || localStorage.getItem('dept');
+
+      if (uRole && uRole !== 'admin' && uDept) {
+        params.department = uDept;
+      } else if (selectedDepts.length > 0) {
+        params.department = selectedDepts.join(',');
       }
 
-      const res = await axios.get(`${HRbaseurl}attendance-report/`, { params });
+      const res = await api.get(`attendance-report/`, { params });
 
-      setData(res.data || []);
+      setData(Array.isArray(res.data) ? res.data : []);
+      console.log("DailyAttendance: Fetched", res.data?.length, "records");
     } catch (err) {
       console.error("Fetch error:", err);
     } finally {
@@ -396,29 +464,76 @@ export default function DailyAttendance() {
 
   useEffect(() => {
     fetchData();
-    // Only auto-refresh if looking at Today
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Only auto-refresh if looking at Today range
+    const todayStr = new Date().toDateString();
     let interval;
-    if (selectedDate === todayStr) {
+    if (fromDate?.toDateString() === todayStr) {
       interval = setInterval(fetchData, 60000);
     }
     return () => {
       if (interval) clearInterval(interval);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
+  }, [fromDate, toDate, selectedDepts]);
+
+  useEffect(() => {
+    const fetchDepts = async () => {
+      try {
+        const res = await api.get(`departments/`);
+        setDepartments(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Failed to fetch departments", err);
+      }
+    };
+    fetchDepts();
+  }, []);
+
+  const toggleDepartment = (deptId) => {
+    setSelectedDepts(prev =>
+      prev.includes(deptId)
+        ? prev.filter(d => d !== deptId)
+        : [...prev, deptId]
+    );
+  };
+
+  const ymd = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const handleExportExcel = () => {
+    const from_date = ymd(fromDate);
+    const to_date = ymd(toDate);
+    let url = `${HRbaseurl}attendance-report/?from_date=${from_date}&to_date=${to_date}&export=xlsx`;
+    if (selectedDepts.length > 0) {
+      url += `&department=${selectedDepts.join(',')}`;
+    }
+    window.open(url, '_blank');
+  };
 
   // Process Data for View
   const processed = useMemo(() => {
     const map = new Map();
-    const isToday = new Date(selectedDate).toDateString() === new Date().toDateString();
+    const isSingleDay = fromDate?.toDateString() === toDate?.toDateString();
+    const isToday = isSingleDay && fromDate?.toDateString() === new Date().toDateString();
 
     const sorted = [...data].sort((a, b) => new Date(a.attendence_time) - new Date(b.attendence_time));
 
     sorted.forEach(record => {
-      if (!map.has(record.employee_id)) {
-        map.set(record.employee_id, {
+      const eid = String(record.employee_id);
+      if (!record.attendence_time) return;
+
+      const attDate = new Date(record.attendence_time);
+      if (isNaN(attDate.getTime())) return;
+
+      const recordDate = attDate.toLocaleDateString();
+      const groupKey = `${eid}_${recordDate}`;
+
+      if (!map.has(groupKey)) {
+        map.set(groupKey, {
           ...record,
+          date: recordDate,
+          employee_id: eid,
           firstIn: null,
           lastOut: null,
           lastPunch: null,
@@ -428,19 +543,19 @@ export default function DailyAttendance() {
         });
       }
 
-      const emp = map.get(record.employee_id);
+      const emp = map.get(groupKey);
       emp.lastPunch = record.attendence_time;
 
-      if (record.attendence_type === 'IN') {
+      const type = (record.attendence_type || '').toUpperCase();
+      if (type === 'IN') {
         if (!emp.firstIn) emp.firstIn = record.attendence_time;
         emp.status = 'present';
-        emp.pendingInTime = record.attendence_time; // Keep for 'isToday' check if needed, though we'll use firstIn
-      } else if (record.attendence_type === 'OUT') {
+        emp.pendingInTime = record.attendence_time;
+      } else if (type === 'OUT') {
         emp.lastOut = record.attendence_time;
         emp.status = 'out';
         emp.pendingInTime = null;
       }
-      // Update device
       emp.device_id = record.device_id;
     });
 
@@ -464,37 +579,29 @@ export default function DailyAttendance() {
       emp.workHours = emp.totalMs / (1000 * 60 * 60); // Convert to hours
       return emp;
     });
-  }, [data, selectedDate]);
+  }, [data, fromDate, toDate]); // Keep dependencies as is, but ensuring it runs on data change
 
   // Derived Filters
-  const departments = useMemo(() => {
+  const activeDepartments = useMemo(() => {
     const depts = new Set(processed.map(p => p.department).filter(Boolean));
     return ['All', ...Array.from(depts)];
   }, [processed]);
 
   // Filter & Sort Logic
   const filteredAndSorted = useMemo(() => {
-    let result = processed;
+    let result = [...processed];
 
     // Filter: Search
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(p =>
-        p.employee_name.toLowerCase().includes(q) ||
-        p.employee_id.toLowerCase().includes(q)
+        String(p.employee_name || '').toLowerCase().includes(q) ||
+        String(p.employee_id || '').toLowerCase().includes(q)
       );
     }
 
-    // Filter: Department
-    // For non-admin, force the filter to always match their department (even if 'All' is selected, though UI should hide 'All' ideally)
-    const role = localStorage.getItem('role');
-    const userDept = localStorage.getItem('department');
-
-    if (role && role !== 'Admin' && userDept) {
-      result = result.filter(p => p.department === userDept);
-    } else if (departmentFilter !== 'All') {
-      result = result.filter(p => p.department === departmentFilter);
-    }
+    // Default: Show only checked (not absent) records in Daily Attendance
+    result = result.filter(p => p.status !== 'absent');
 
     // Filter: Status (Custom logic based on status string or lateness)
     if (statusFilter !== 'All') {
@@ -531,7 +638,7 @@ export default function DailyAttendance() {
     });
 
     return result;
-  }, [processed, search, departmentFilter, statusFilter, sortConfig]);
+  }, [processed, search, selectedDepts, statusFilter, sortConfig, departments]); // Added departments to dependencies
 
 
   // Stats
@@ -564,21 +671,28 @@ export default function DailyAttendance() {
 
   return (
     <>
-      <GlobalStyle />
+
       <Page>
         <Container>
           <Header>
             <TitleBlock>
               <Title>
                 <Clock size={32} />
-                Daily Attendance
+                Attendance Overview
               </Title>
-              <Subtitle>Monitor daily check-ins, status, and activity</Subtitle>
+              <Subtitle>
+                {filteredAndSorted.length} record(s) found.
+                {statusFilter !== 'All' ? ` Filter: ${statusFilter}` : ''}
+                {selectedDepts.length > 0 ? ` Departments: ${selectedDepts.length}` : ''}
+              </Subtitle>
             </TitleBlock>
 
             <CurrentDate>
               <Calendar size={16} />
-              {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {fromDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {toDate && toDate.getTime() !== fromDate?.getTime() && (
+                <> - {toDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+              )}
             </CurrentDate>
           </Header>
 
@@ -607,36 +721,31 @@ export default function DailyAttendance() {
           <MainCard>
             <Toolbar>
               <LeftToolbar>
-                <DatePickerWrapper>
-                  <Calendar size={16} color="var(--muted)" />
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                <DatePickerWrapper style={{ display: 'flex', gap: '10px' }}>
+                  <DatePicker
+                    selected={fromDate}
+                    onChange={(date) => setFromDate(date)}
+                    customInput={<CustomDateInput label="From" />}
+                    dateFormat="MMM d, yyyy"
+                    portalId="root"
+                  />
+                  <DatePicker
+                    selected={toDate}
+                    onChange={(date) => setToDate(date)}
+                    customInput={<CustomDateInput label="To" />}
+                    dateFormat="MMM d, yyyy"
+                    portalId="root"
                   />
                 </DatePickerWrapper>
 
                 <SearchBox>
-                  <Search size={18} />
+                  <SearchIcon size={18} />
                   <input
                     placeholder="Search employee or ID..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
                 </SearchBox>
-
-                {/* Only show department filter for generic users if we want them to filter WITHIN their allowed scope (which is 1 dept, so useless) */
-                  /* Actually, best to hide "All Departments" selector if not Admin */
-                  (localStorage.getItem('role') === 'Admin') && (
-                    <SelectBox
-                      value={departmentFilter}
-                      onChange={e => setDepartmentFilter(e.target.value)}
-                    >
-                      {departments.map(d => (
-                        <option key={d} value={d}>{d === 'All' ? 'All Departments' : d}</option>
-                      ))}
-                    </SelectBox>
-                  )}
 
                 <SelectBox
                   value={statusFilter}
@@ -648,23 +757,83 @@ export default function DailyAttendance() {
                   <option value="Late">Late</option>
                   <option value="On Time">On Time</option>
                 </SelectBox>
+
+                {(role === 'admin' || !localStorage.getItem('department')) && (
+                  <SelectBox
+                    value={selectedDepts.length === 0 ? "all" : selectedDepts[0]}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedDepts(val === "all" ? [] : [val]);
+                    }}
+                  >
+                    <option value="all">All Departments</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                  </SelectBox>
+                )}
               </LeftToolbar>
 
               <RefreshBtn onClick={fetchData} disabled={loading}>
                 <RefreshCw size={18} className={loading ? 'spin' : ''} />
                 Refresh
               </RefreshBtn>
+
+              <RefreshBtn
+                onClick={handleExportExcel}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white',
+                  border: 'none'
+                }}
+              >
+                <Download size={18} />
+                Export Excel
+              </RefreshBtn>
+
+              {(search || selectedDepts.length > 0 || statusFilter !== 'All') && (
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setSelectedDepts([]);
+                    setStatusFilter('All');
+                    setFromDate(new Date());
+                    setToDate(new Date());
+                  }}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Reset Filters
+                </button>
+              )}
             </Toolbar>
 
+
             {filteredAndSorted.length === 0 ? (
-              <EmptyState>No attendance records found for this date.</EmptyState>
+              <EmptyState>
+                No attendance records found for this range.
+                <div style={{ fontSize: 11, marginTop: 8, opacity: 0.7 }}>
+                  (Raw: {data.length}, Processed: {processed.length}, Role: {role})
+                </div>
+              </EmptyState>
             ) : (
-              <Table>
+              <TableWrapper><TableInner><Table>
                 <thead>
                   <tr>
                     <Th onClick={() => handleSort('employee_name')}>
                       Employee
                       {sortConfig.key === 'employee_name' && <ArrowUpDown size={12} />}
+                    </Th>
+                    <Th onClick={() => handleSort('date')}>
+                      Date
+                      {sortConfig.key === 'date' && <ArrowUpDown size={12} />}
                     </Th>
                     <Th onClick={() => handleSort('department')}>
                       Department
@@ -691,10 +860,15 @@ export default function DailyAttendance() {
                     const isLate = emp.firstIn && (new Date(emp.firstIn).getHours() + new Date(emp.firstIn).getMinutes() / 60) > 9.25;
 
                     return (
-                      <Tr key={emp.employee_id}>
+                      <Tr key={`${emp.employee_id}_${emp.date}`}>
                         <Td>
                           <EmpName>{emp.employee_name}</EmpName>
                           <EmpMeta>#{emp.employee_id}</EmpMeta>
+                        </Td>
+                        <Td>
+                          <span style={{ fontSize: '13px', color: 'var(--text)' }}>
+                            {emp.date}
+                          </span>
                         </Td>
                         <Td>
                           {emp.department || '-'}
@@ -714,7 +888,7 @@ export default function DailyAttendance() {
                         </Td>
                         <Td>
                           <span style={{ fontWeight: 600, color: emp.workHours >= 8 ? '#10b981' : 'var(--text)' }}>
-                            {emp.workHours.toFixed(2)} hrs
+                            {(!isNaN(emp.workHours) ? emp.workHours.toFixed(2) : '0.00')} hrs
                           </span>
                         </Td>
                         <Td>
@@ -729,7 +903,7 @@ export default function DailyAttendance() {
                     );
                   })}
                 </tbody>
-              </Table>
+              </Table></TableInner></TableWrapper>
             )}
           </MainCard>
         </Container>

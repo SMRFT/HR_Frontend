@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
+import api, { HR_BASE_URL } from "../api";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { CSVLink } from "react-csv";
-import styled, { createGlobalStyle } from "styled-components";
 import {
   Search,
   Calendar,
@@ -15,89 +13,13 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  FileText
+  FileText,
+  Layers
 } from "lucide-react";
+import { CSVLink } from "react-csv";
+import styled from "styled-components";
 
 
-// Global Styles (keeping existing styles)
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
-  }
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; overflow-x: hidden; }
-  body {
-    margin: 0;
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-
-  .react-datepicker-wrapper {
-    width: 100%;
-  }
-
-
-  .react-datepicker {
-    font-family: inherit;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg2);
-    box-shadow: var(--shadow);
-  }
-
-
-  .react-datepicker__header {
-    background: var(--glass);
-    border-bottom: 1px solid var(--border);
-  }
-
-
-  .react-datepicker__current-month,
-  .react-datepicker__day-name {
-    color: var(--text);
-  }
-
-
-  .react-datepicker__day {
-    color: var(--muted);
-  }
-
-
-  .react-datepicker__day--selected,
-  .react-datepicker__day--keyboard-selected {
-    background: var(--primary);
-    color: white;
-  }
-
-
-  .react-datepicker__day:hover {
-    background: var(--primary-2);
-    color: white;
-  }
-`;
 
 
 // Styled Components (keeping all existing styled components)
@@ -174,10 +96,9 @@ const StatCard = styled.div`
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: clamp(14px, 2vw, 24px);
   box-shadow: var(--shadow);
   transition: var(--transition);
-
 
   &:hover {
     transform: translateY(-4px);
@@ -201,7 +122,7 @@ const StatLabel = styled.div`
 
 const StatValue = styled.div`
   color: var(--text);
-  font-size: 28px;
+  font-size: clamp(20px, 3vw, 28px);
   font-weight: 800;
   line-height: 1.2;
 `;
@@ -219,15 +140,15 @@ const Card = styled.div`
 
 
 const CardHeader = styled.div`
-  padding: 24px;
+  padding: clamp(16px, 2vw, 24px);
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
 `;
 
 
 const CardTitle = styled.h3`
-  margin: 0 0 20px 0;
-  font-size: 18px;
+  margin: 0 0 clamp(12px, 2vw, 20px) 0;
+  font-size: clamp(14px, 2vw, 18px);
   font-weight: 700;
   color: var(--text);
   display: flex;
@@ -242,7 +163,6 @@ const Filters = styled.div`
   gap: 12px;
   align-items: center;
 
-
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
@@ -254,7 +174,6 @@ const SearchWrapper = styled.div`
   position: relative;
   flex: 1;
   min-width: 250px;
-
 
   @media (max-width: 768px) {
     width: 100%;
@@ -273,11 +192,7 @@ const SearchInput = styled.input`
   font-size: 14px;
   transition: var(--transition);
 
-
-  &::placeholder {
-    color: var(--muted);
-  }
-
+  &::placeholder { color: var(--muted); }
 
   &:focus {
     outline: none;
@@ -310,11 +225,7 @@ const DatePickerWrapper = styled.div`
   min-width: 200px;
   transition: var(--transition);
 
-
-  &:hover {
-    border-color: var(--primary);
-  }
-
+  &:hover { border-color: var(--primary); }
 
   input {
     width: 100%;
@@ -323,22 +234,11 @@ const DatePickerWrapper = styled.div`
     color: var(--text);
     font-size: 14px;
     cursor: pointer;
-
-
-    &:focus {
-      outline: none;
-    }
-
-
-    &::placeholder {
-      color: var(--muted);
-    }
+    &:focus { outline: none; }
+    &::placeholder { color: var(--muted); }
   }
 
-
-  @media (max-width: 768px) {
-    width: 100%;
-  }
+  @media (max-width: 768px) { width: 100%; }
 `;
 
 
@@ -360,51 +260,73 @@ const Button = styled.button`
   gap: 8px;
   white-space: nowrap;
 
-
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(99,102,241,0.3);
   }
+  &:active { transform: translateY(0); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  @media (max-width: 768px) { width: 100%; justify-content: center; }
+`;
 
 
-  &:active {
-    transform: translateY(0);
-  }
+const ChipContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  width: 100%;
+`;
 
+const DeptChip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: ${props => props.selected ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
+  color: ${props => props.selected ? '#818cf8' : '#94a3b8'};
+  border: 1px solid ${props => props.selected ? 'rgba(99, 102, 241, 0.3)' : 'transparent'};
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-
-  @media (max-width: 768px) {
-    width: 100%;
-    justify-content: center;
+  &:hover {
+    background: ${props => props.selected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    transform: translateY(-1px);
   }
 `;
 
 
+/* Top-scroll wrapper: flip the outer div so the scrollbar appears at the top */
 const TableWrapper = styled.div`
+  transform: rotateX(180deg);
   overflow-x: auto;
-  padding: 24px;
+  -webkit-overflow-scrolling: touch;
 
-
-  &::-webkit-scrollbar {
-    height: 8px;
-  }
-
-
+  &::-webkit-scrollbar { height: 8px; }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.25);
     border-radius: 4px;
   }
-
-
   &::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
   }
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.25) rgba(255,255,255,0.05);
+`;
+
+/* Counter-flip so content renders normally */
+const TableInner = styled.div`
+  transform: rotateX(180deg);
+  padding: clamp(12px, 2vw, 24px);
 `;
 
 
@@ -433,12 +355,11 @@ const TH = styled.th`
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15,23,42,0.95);
   backdrop-filter: blur(10px);
-  
-  &.date-header {
-    text-align: center;
-    min-width: 90px;
+
+  &.sunday {
+    color: var(--danger);
   }
 `;
 
@@ -451,15 +372,8 @@ const TR = styled.tr`
   transition: var(--transition);
   cursor: pointer;
 
-
-  &:hover {
-    background: rgba(255,255,255,0.05);
-  }
-
-
-  &:last-child {
-    border-bottom: none;
-  }
+  &:hover { background: rgba(255,255,255,0.05); }
+  &:last-child { border-bottom: none; }
 `;
 
 
@@ -468,34 +382,33 @@ const TD = styled.td`
   color: var(--text);
   font-size: 14px;
   white-space: nowrap;
-  
+
   &.date-cell {
     text-align: center;
     font-size: 12px;
     min-width: 90px;
     background: ${props => {
-    if (props.$status === 'present') return 'rgba(16, 185, 129, 0.1)';
-    if (props.$status === 'late') return 'rgba(245, 158, 11, 0.1)';
-    if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.15)';
-    if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.05)';
+    if (props.$status === 'present') return 'rgba(16,185,129,0.1)';
+    if (props.$status === 'late') return 'rgba(245,158,11,0.1)';
+    if (props.$status === 'half-day') return 'rgba(245,158,11,0.15)';
+    if (props.$status === 'absent') return 'rgba(255,255,255,0.05)';
     return 'transparent';
   }};
     border: 1px solid ${props => {
-    if (props.$status === 'present') return 'rgba(16, 185, 129, 0.2)';
-    if (props.$status === 'late') return 'rgba(245, 158, 11, 0.2)';
-    if (props.$status === 'half-day') return 'rgba(245, 158, 11, 0.3)';
-    if (props.$status === 'absent') return 'rgba(255, 255, 255, 0.1)';
+    if (props.$status === 'present') return 'rgba(16,185,129,0.2)';
+    if (props.$status === 'late') return 'rgba(245,158,11,0.2)';
+    if (props.$status === 'half-day') return 'rgba(245,158,11,0.3)';
+    if (props.$status === 'absent') return 'rgba(255,255,255,0.1)';
     return 'transparent';
   }};
   }
-
 
   &.employee-cell {
     position: sticky;
     left: 0;
     background: var(--bg1);
     z-index: 5;
-    min-width: 200px;
+    min-width: 250px;
   }
 `;
 
@@ -532,9 +445,8 @@ const TimeLabel = styled.span`
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  
   color: ${props => props.$type === 'IN' ? 'var(--success)' : 'var(--primary)'};
-  background: ${props => props.$type === 'IN' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(99, 102, 241, 0.12)'};
+  background: ${props => props.$type === 'IN' ? 'rgba(16,185,129,0.12)' : 'rgba(99,102,241,0.12)'};
 `;
 
 
@@ -544,23 +456,20 @@ const HoursLabel = styled.div`
   margin: 3px 0;
   padding: 3px 8px;
   border-radius: 6px;
-  
   color: ${props => {
     if (props.$hours >= 8) return 'var(--success)';
     if (props.$hours >= 4) return 'var(--warning)';
     return 'var(--danger)';
   }};
-  
   background: ${props => {
-    if (props.$hours >= 8) return 'rgba(16, 185, 129, 0.15)';
-    if (props.$hours >= 4) return 'rgba(245, 158, 11, 0.15)';
-    return 'rgba(239, 68, 68, 0.15)';
+    if (props.$hours >= 8) return 'rgba(16,185,129,0.15)';
+    if (props.$hours >= 4) return 'rgba(245,158,11,0.15)';
+    return 'rgba(239,68,68,0.15)';
   }};
-  
   border: 1px solid ${props => {
-    if (props.$hours >= 8) return 'rgba(16, 185, 129, 0.3)';
-    if (props.$hours >= 4) return 'rgba(245, 158, 11, 0.3)';
-    return 'rgba(239, 68, 68, 0.3)';
+    if (props.$hours >= 8) return 'rgba(16,185,129,0.3)';
+    if (props.$hours >= 4) return 'rgba(245,158,11,0.3)';
+    return 'rgba(239,68,68,0.3)';
   }};
 `;
 
@@ -572,26 +481,23 @@ const StatusLabel = styled.div`
   letter-spacing: 0.4px;
   padding: 3px 8px;
   border-radius: 5px;
-  
   color: ${props => {
     if (props.$type === 'present') return '#10b981';
     if (props.$type === 'late' || props.$type === 'half-day') return '#f59e0b';
     if (props.$type === 'absent') return 'var(--muted)';
     return 'var(--muted)';
   }};
-  
   background: ${props => {
-    if (props.$type === 'present') return 'rgba(16, 185, 129, 0.15)';
-    if (props.$type === 'late' || props.$type === 'half-day') return 'rgba(245, 158, 11, 0.15)';
-    if (props.$type === 'absent') return 'rgba(255, 255, 255, 0.08)';
+    if (props.$type === 'present') return 'rgba(16,185,129,0.15)';
+    if (props.$type === 'late' || props.$type === 'half-day') return 'rgba(245,158,11,0.15)';
+    if (props.$type === 'absent') return 'rgba(255,255,255,0.08)';
     return 'transparent';
   }};
-  
   border: 1px solid ${props => {
-    if (props.$type === 'present') return 'rgba(16, 185, 129, 0.3)';
-    if (props.$type === 'late') return 'rgba(245, 158, 11, 0.3)';
-    if (props.$type === 'half-day') return 'rgba(245, 158, 11, 0.4)';
-    if (props.$type === 'absent') return 'rgba(255, 255, 255, 0.15)';
+    if (props.$type === 'present') return 'rgba(16,185,129,0.3)';
+    if (props.$type === 'late') return 'rgba(245,158,11,0.3)';
+    if (props.$type === 'half-day') return 'rgba(245,158,11,0.4)';
+    if (props.$type === 'absent') return 'rgba(255,255,255,0.15)';
     return 'transparent';
   }};
 `;
@@ -607,10 +513,7 @@ const ExpandButton = styled.button`
   align-items: center;
   transition: var(--transition);
 
-
-  &:hover {
-    color: var(--primary);
-  }
+  &:hover { color: var(--primary); }
 `;
 
 
@@ -649,7 +552,6 @@ const LoadingSpinner = styled.div`
   border-top-color: var(--primary);
   animation: spin 0.8s linear infinite;
 
-
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
@@ -686,47 +588,53 @@ const FilterSelect = styled.select`
     color: var(--text);
   }
 
-  @media (max-width: 768px) {
-    width: 100%;
-  }
+  @media (max-width: 768px) { width: 100%; }
 `;
 
 // Helper Functions
 const ymd = (d) => {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+  if (!d || isNaN(new Date(d).getTime())) return "";
+  const dateObj = new Date(d);
+  const yyyy = dateObj.getFullYear();
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const dd = String(dateObj.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 };
 
 
-const monthRange = (d) => {
-  const start = new Date(d.getFullYear(), d.getMonth(), 1);
-  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  start.setHours(0, 0, 0, 0);
-  end.setHours(23, 59, 59, 999);
-  return { start, end };
-};
+// Deprecated: monthRange is now replaced by direct from/to date states
+// const monthRange = (d) => {
+//   const start = new Date(d.getFullYear(), d.getMonth(), 1);
+//   const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+//   start.setHours(0, 0, 0, 0);
+//   end.setHours(23, 59, 59, 999);
+//   return { start, end };
+// };
 
 
-const getDaysInMonth = (date) => {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+const getDaysInRange = (start, end) => {
+  if (!start || !end) return [];
+  const days = [];
+  let curr = new Date(start);
+  curr.setHours(0, 0, 0, 0);
+  const endLimit = new Date(end);
+  endLimit.setHours(23, 59, 59, 999);
 
-
-  return Array.from({ length: daysInMonth }, (_, i) => {
-    const day = new Date(year, month, i + 1);
-    return {
-      date: day,
-      dayNum: i + 1,
-      dateStr: ymd(day)
-    };
-  });
+  while (curr <= endLimit) {
+    days.push({
+      date: new Date(curr),
+      dayNum: curr.getDate(),
+      dateStr: ymd(curr),
+      isSunday: curr.getDay() === 0
+    });
+    curr.setDate(curr.getDate() + 1);
+  }
+  return days;
 };
 
 
 const fmtTime = (dateStr) => {
+  if (!dateStr || isNaN(new Date(dateStr).getTime())) return "-";
   const d = new Date(dateStr);
   return d.toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -806,35 +714,58 @@ const getAttendanceStatus = (inTime, outTime, workHours) => {
 // Main Component
 export default function AttendanceReport() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [month, setMonth] = useState(new Date());
+  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [endDate, setEndDate] = useState(new Date());
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedEmployee, setExpandedEmployee] = useState(null);
+  const [viewMode, setViewMode] = useState('detailed'); // 'detailed' | 'matrix'
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepts, setSelectedDepts] = useState([]);
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
+
+  const role = (localStorage.getItem('role') || '').toLowerCase();
+  const dept = (localStorage.getItem('department') || localStorage.getItem('dept') || '');
+
   useEffect(() => {
     fetchData();
-  }, [month]);
+  }, [startDate, endDate, selectedDepts]);
+
+  useEffect(() => {
+    const fetchDepts = async () => {
+      try {
+        const res = await api.get(`departments/`);
+        setDepartments(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Failed to fetch departments", err);
+      }
+    };
+    fetchDepts();
+  }, [HRbaseurl]);
+
+  const toggleDepartment = (deptId) => {
+    setSelectedDepts(prev =>
+      prev.includes(deptId)
+        ? prev.filter(d => d !== deptId)
+        : [...prev, deptId]
+    );
+  };
 
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { start, end } = monthRange(month);
-      const role = localStorage.getItem('role');
-      const dept = localStorage.getItem('department');
-      const params = {
-        from_date: ymd(start),
-        to_date: ymd(end),
-      };
+      const from_date = ymd(startDate);
+      const to_date = ymd(endDate || startDate);
+      const params = { from_date, to_date };
 
-      if (role && role !== 'Admin' && dept) {
+      if (role && role !== 'admin' && dept) {
         params.department = dept;
+      } else if (selectedDepts.length > 0) {
+        params.department = selectedDepts.join(',');
       }
 
-      const res = await axios.get(
-        `${HRbaseurl}attendance-report/`,
-        { params }
-      );
+      const res = await api.get(`attendance-report/`, { params });
       setData(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Error fetching attendance:", err);
@@ -858,6 +789,7 @@ export default function AttendanceReport() {
           employee_id: empId,
           employee_name: record.employee_name,
           department: record.department,
+          department_id: record.department_id, // NEW: Include ID
           designation: record.designation,
           attendance: new Map(),
           allRecords: []
@@ -969,23 +901,11 @@ export default function AttendanceReport() {
     return Array.from(employeeMap.values());
   }, [data]);
 
-  // Derived Departments List for Filter
-  const departments = useMemo(() => {
-    const depts = new Set(processedData.map(p => p.department).filter(Boolean));
-    return Array.from(depts).sort();
-  }, [processedData]);
-
-  const [departmentFilter, setDepartmentFilter] = useState('All');
 
   const filteredEmployees = useMemo(() => {
     let result = processedData;
 
-    // 1. Filter by Department
-    if (departmentFilter !== 'All') {
-      result = result.filter(emp => emp.department === departmentFilter);
-    }
-
-    // 2. Filter by Search Query
+    // 1. Filter by Search Query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(emp =>
@@ -997,9 +917,9 @@ export default function AttendanceReport() {
     }
 
     return result;
-  }, [processedData, searchQuery, departmentFilter]);
+  }, [processedData, searchQuery, selectedDepts]);
 
-  const daysInMonth = useMemo(() => getDaysInMonth(month), [month]);
+  const daysInMonth = useMemo(() => getDaysInRange(startDate, endDate), [startDate, endDate]);
 
 
   const stats = useMemo(() => {
@@ -1027,109 +947,105 @@ export default function AttendanceReport() {
   //   setExpandedEmployee(prev => prev === empId ? null : empId);
   // };
 
-  // CSV Generation with two header rows for grouped columns
-  const csvData = useMemo(() => {
-    // Header Row 1: Grouped Headers
-    const headerRow1 = [
-      "Employee Name",
-      "Department",
-      ...daysInMonth.flatMap(day => [
-        day.dateStr,
-        "", // Placeholder for 'Out' column under the same date
-        ""  // Placeholder for 'Total' column under the same date
-      ])
-    ];
+  const getStatusAbbr = (statusLabel) => {
+    if (statusLabel === 'Absent' || statusLabel === 'Absent (<4h)' || statusLabel === 'Absent (No IN)' || statusLabel === 'Absent (No OUT)') return 'A';
+    if (statusLabel === 'Present') return 'P';
+    if (statusLabel === 'Late') return 'SP';
+    if (statusLabel === 'Half Day' || statusLabel === 'Late/Half Day') return 'SP'; // Since 'single punch' is grouped here
+    return 'A'; // Default absent
+  };
 
-    // Header Row 2: Sub-headers
-    const headerRow2 = [
-      "", // Under Name
-      "", // Under Department
-      ...daysInMonth.flatMap(() => [
-        "In",
-        "Out",
-        "Total"
-      ])
-    ];
+  const getHexColor = (abbr) => {
+    if (abbr === 'A') return '#ef4444'; // Red
+    if (abbr === 'P') return '#10b981'; // Green
+    if (abbr === 'SP' || abbr === 'LL') return '#f59e0b'; // Yellow
+    if (abbr === 'WO') return '#3b82f6'; // Blue
+    return '#000000';
+  };
 
-    // Data Rows
-    const rows = filteredEmployees.map(emp => {
-      const rowData = [
-        emp.employee_name,
-        emp.department
-      ];
+  const handleExportDetailed = () => {
+    const from_date = ymd(startDate);
+    const to_date = ymd(endDate || startDate);
+    let url = `${HRbaseurl}attendance-report/?from_date=${from_date}&to_date=${to_date}&export=detailed_xlsx`;
 
-      daysInMonth.forEach(day => {
-        const dayData = emp.attendance.get(day.dateStr);
-        let inTime = '-';
-        let outTime = '-';
-        let dailyTotal = '-';
+    // Add department filter if active
+    if (role && role !== 'admin' && dept) {
+      url += `&department=${dept}`;
+    } else if (selectedDepts.length > 0) {
+      url += `&department=${selectedDepts.join(',')}`;
+    }
 
-        if (dayData) {
-          if (dayData.in) inTime = fmtTime(dayData.in);
-          if (dayData.out) outTime = fmtTime(dayData.out);
+    window.open(url, '_blank');
+  };
 
-          if (dayData.workHours > 0) {
-            // Total working hours
-            dailyTotal = dayData.workHours.toFixed(2);
-          } else if (dayData.status?.status === 'absent') {
-            dailyTotal = '0.00';
-          } else {
-            dailyTotal = '0.00';
-          }
-        } else {
-          dailyTotal = '0.00';
-        }
-
-        rowData.push(inTime, outTime, dailyTotal);
-      });
-
-      return rowData;
-    });
-
-    return [headerRow1, headerRow2, ...rows];
-  }, [filteredEmployees, daysInMonth]);
-
-
-  // CSV Generation: Status Only
-  const csvStatusOnlyData = useMemo(() => {
-    // Header Row
-    const headerRow = [
-      "Employee ID",
-      "Employee Name",
-      "Department",
-      "Designation",
+  const handleExportStatus = () => {
+    const headers = [
+      "S.No", "Employee ID", "Employee Name", "Department", "Designation",
       ...daysInMonth.map(day => day.dateStr)
     ];
 
-
-    // Data Rows
-    const rows = filteredEmployees.map(emp => {
+    const rows = filteredEmployees.map((emp, idx) => {
       const rowData = [
+        idx + 1,
         emp.employee_id,
         emp.employee_name,
         emp.department,
-        emp.designation
+        emp.designation || '-'
       ];
-
 
       daysInMonth.forEach(day => {
         const dayData = emp.attendance.get(day.dateStr);
-        let status = 'Absent';
+        let abbr = 'A';
 
-
-        if (dayData && (dayData.in || dayData.out)) {
-          status = 'Present';
+        if (dayData && dayData.status) {
+          abbr = getStatusAbbr(dayData.status.label);
+        } else if (dayData && (dayData.in || dayData.out)) {
+          // Fallback if status calculation failed but punches exist
+          abbr = (dayData.in && dayData.out) ? 'P' : 'SP';
         }
-        rowData.push(status);
-      });
 
+        rowData.push({ value: abbr, color: getHexColor(abbr) });
+      });
 
       return rowData;
     });
 
+    downloadExcel(headers, rows, `Attendance_Status_${startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}.xls`);
+  };
 
-    return [headerRow, ...rows];
-  }, [filteredEmployees, daysInMonth]);
+  const downloadExcel = (headers, rows, filename) => {
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8" /></head><body>';
+    html += '<table border="1" style="border-collapse: collapse;"><thead><tr>';
+
+    headers.forEach(header => {
+      html += `<th style="background-color: #f1f5f9; font-weight: bold; padding: 5px;">${header}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    rows.forEach(row => {
+      html += '<tr>';
+      row.forEach(cell => {
+        if (typeof cell === 'object' && cell !== null && cell.value !== undefined) {
+          html += `<td style="color: ${cell.color}; font-weight: bold; padding: 5px; text-align: center;">${cell.value}</td>`;
+        } else {
+          html += `<td style="padding: 5px;">${cell}</td>`;
+        }
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></body></html>';
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
 
   const toggleExpand = (empId) => {
@@ -1139,7 +1055,7 @@ export default function AttendanceReport() {
 
   return (
     <>
-      <GlobalStyle />
+
       <Page>
         <Container>
           <Header>
@@ -1149,7 +1065,7 @@ export default function AttendanceReport() {
                   <Users size={32} />
                   Monthly Attendance Report
                 </Title>
-                <Subtitle>View employee attendance by date for {month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} • Supports overnight shifts & single punch detection</Subtitle>
+                <Subtitle>View employee attendance reports by selecting a custom date range • Supports overnight shifts & single punch detection</Subtitle>
               </div>
             </HeaderTop>
 
@@ -1194,15 +1110,17 @@ export default function AttendanceReport() {
                   />
                 </SearchWrapper>
 
-                {/* Department Filter (Only for Admin) */}
-                {localStorage.getItem('role') === 'Admin' && (
+                {(localStorage.getItem('role') === 'Admin' || !localStorage.getItem('department')) && (
                   <FilterSelect
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    value={selectedDepts.length === 0 ? "all" : selectedDepts[0]}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedDepts(val === "all" ? [] : [val]);
+                    }}
                   >
-                    <option value="All">All Departments</option>
+                    <option value="all">All Departments</option>
                     {departments.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
                     ))}
                   </FilterSelect>
                 )}
@@ -1210,11 +1128,17 @@ export default function AttendanceReport() {
                 <DatePickerWrapper>
                   <Calendar size={18} style={{ marginRight: 8, color: 'var(--muted)' }} />
                   <DatePicker
-                    selected={month}
-                    onChange={(d) => d && setMonth(d)}
-                    dateFormat="MMM yyyy"
-                    showMonthYearPicker
-                    placeholderText="Select Month"
+                    selectsRange={true}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onChange={(update) => {
+                      const [start, end] = update;
+                      setStartDate(start);
+                      setEndDate(end);
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="Select Date Range"
+                    portalId="root"
                   />
                 </DatePickerWrapper>
 
@@ -1225,30 +1149,54 @@ export default function AttendanceReport() {
                 </Button>
 
 
+                <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                  <button
+                    onClick={() => setViewMode('detailed')}
+                    style={{
+                      background: viewMode === 'detailed' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      color: viewMode === 'detailed' ? 'var(--primary)' : 'var(--text-muted)',
+                      border: 'none',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title="Detailed View"
+                  >
+                    <FileText size={18} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('matrix')}
+                    style={{
+                      background: viewMode === 'matrix' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      color: viewMode === 'matrix' ? 'var(--primary)' : 'var(--text-muted)',
+                      border: 'none',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title="Matrix View"
+                  >
+                    <Layers size={18} />
+                  </button>
+                </div>
+
                 {filteredEmployees.length > 0 && (
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <CSVLink
-                      data={csvData}
-                      filename={`attendance_detailed_${month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.csv`}
-                      target="_blank"
-                    >
-                      <Button $primary>
-                        <Download size={16} />
-                        Detailed CSV
-                      </Button>
-                    </CSVLink>
+                    <Button $primary onClick={handleExportDetailed}>
+                      <Download size={16} />
+                      Detailed Report
+                    </Button>
 
-
-                    <CSVLink
-                      data={csvStatusOnlyData}
-                      filename={`attendance_status_${month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.csv`}
-                      target="_blank"
-                    >
-                      <Button style={{ background: '#10b981', borderColor: '#10b981' }}>
-                        <FileText size={16} />
-                        Status CSV
-                      </Button>
-                    </CSVLink>
+                    <Button onClick={handleExportStatus} style={{ background: 'rgba(16, 185, 129, 0.2)', borderColor: '#10b981', color: '#10b981' }}>
+                      <FileText size={16} />
+                      Status Matrix
+                    </Button>
                   </div>
                 )}
               </Filters>
@@ -1266,123 +1214,179 @@ export default function AttendanceReport() {
                   <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
                     No attendance records found
                   </div>
-                  <div>Try adjusting your filters or select a different month</div>
+                  <div>Try adjusting your filters or select a different date range</div>
                 </EmptyState>
               ) : (
-                <Table>
-                  <THead>
-                    <tr>
-                      <TH rowSpan="2" style={{ padding: '0', zIndex: 20 }}>
-                        <div style={{ padding: '12px 16px', minWidth: '200px' }}>Employee</div>
-                      </TH>
-                      <TH rowSpan="2">Dept</TH>
-                      <TH rowSpan="2">Designation</TH>
-                      {daysInMonth.map(day => (
-                        <TH key={day.dayNum} colSpan="3" style={{ textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
-                          {day.date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}<br />
-                          <span style={{ fontSize: '10px', opacity: 0.7 }}>
-                            {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
-                          </span>
-                        </TH>
-                      ))}
-                    </tr>
-                    <tr>
-                      {daysInMonth.map(day => (
-                        <React.Fragment key={day.dayNum}>
-                          <TH style={{ minWidth: '60px', fontSize: '10px', borderLeft: '1px solid var(--border)', color: 'var(--success)', textAlign: 'center' }}>In</TH>
-                          <TH style={{ minWidth: '60px', fontSize: '10px', color: 'var(--danger)', textAlign: 'center' }}>Out</TH>
-                          <TH style={{ minWidth: '60px', fontSize: '10px', color: 'var(--warning)', textAlign: 'center' }}>Hrs</TH>
-                        </React.Fragment>
-                      ))}
-                    </tr>
-                  </THead>
-                  <TBody>
-                    {filteredEmployees.map((emp) => (
-                      <React.Fragment key={emp.employee_id}>
-                        <TR onClick={() => toggleExpand(emp.employee_id)}>
-                          <TD className="employee-cell">
-                            <EmployeeInfo>
-                              <EmployeeName>
-                                <ExpandButton as="span">
-                                  {expandedEmployee === emp.employee_id ?
-                                    <ChevronUp size={16} /> :
-                                    <ChevronDown size={16} />
-                                  }
-                                </ExpandButton>
-                                {emp.employee_name || 'N/A'}
-                              </EmployeeName>
-                              <EmployeeMeta>ID: {emp.employee_id}</EmployeeMeta>
-                            </EmployeeInfo>
-                          </TD>
-                          <TD>{emp.department || 'N/A'}</TD>
-                          <TD>{emp.designation || 'N/A'}</TD>
-                          {daysInMonth.map(day => {
-                            const dayData = emp.attendance.get(day.dateStr);
-                            const statusType = dayData?.status?.status || 'absent';
-                            // Base background color based on status
-                            const bgColor = statusType === 'present' ? 'rgba(16, 185, 129, 0.05)' :
-                              statusType === 'absent' ? 'transparent' : 'rgba(245, 158, 11, 0.05)';
+                <TableInner>
+                  {viewMode === 'detailed' ? (
+                    <Table>
+                      <THead>
+                        <tr>
+                          <TH rowSpan="2" style={{ padding: '0', zIndex: 20 }}>
+                            <div style={{ padding: '12px 16px', minWidth: '200px' }}>Employee</div>
+                          </TH>
+                          <TH rowSpan="2">Dept</TH>
+                          <TH rowSpan="2">Designation</TH>
+                          {daysInMonth.map(day => (
+                            <TH key={day.dayNum} colSpan="3" className={day.isSunday ? "sunday" : ""} style={{ textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
+                              {day.date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}<br />
+                              <span style={{ fontSize: '10px', opacity: 0.7 }}>
+                                {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                              </span>
+                            </TH>
+                          ))}
+                        </tr>
+                        <tr>
+                          {daysInMonth.map(day => (
+                            <React.Fragment key={day.dayNum}>
+                              <TH style={{ minWidth: '60px', fontSize: '10px', borderLeft: '1px solid var(--border)', color: 'var(--success)', textAlign: 'center' }}>In</TH>
+                              <TH style={{ minWidth: '60px', fontSize: '10px', color: 'var(--danger)', textAlign: 'center' }}>Out</TH>
+                              <TH style={{ minWidth: '60px', fontSize: '10px', color: 'var(--warning)', textAlign: 'center' }}>Hrs</TH>
+                            </React.Fragment>
+                          ))}
+                        </tr>
+                      </THead>
+                      <TBody>
+                        {filteredEmployees.map((emp) => (
+                          <React.Fragment key={emp.employee_id}>
+                            <TR onClick={() => toggleExpand(emp.employee_id)}>
+                              <TD className="employee-cell">
+                                <EmployeeInfo>
+                                  <EmployeeName>
+                                    <ExpandButton as="span">
+                                      {expandedEmployee === emp.employee_id ?
+                                        <ChevronUp size={16} /> :
+                                        <ChevronDown size={16} />
+                                      }
+                                    </ExpandButton>
+                                    {emp.employee_name || 'N/A'}
+                                  </EmployeeName>
+                                  <EmployeeMeta>ID: {emp.employee_id}</EmployeeMeta>
+                                </EmployeeInfo>
+                              </TD>
+                              <TD>{emp.department || 'N/A'}</TD>
+                              <TD>{emp.designation || 'N/A'}</TD>
+                              {daysInMonth.map(day => {
+                                const dayData = emp.attendance.get(day.dateStr);
+                                const statusType = dayData?.status?.status || 'absent';
+                                // Base background color based on status
+                                const bgColor = statusType === 'present' ? 'rgba(16, 185, 129, 0.05)' :
+                                  statusType === 'absent' ? 'transparent' : 'rgba(245, 158, 11, 0.05)';
 
 
-                            return (
-                              <React.Fragment key={day.dayNum}>
-                                <TD style={{ background: bgColor, borderLeft: '1px solid rgba(255,255,255,0.05)', textAlign: 'center', fontSize: '12px' }}>
-                                  {dayData && dayData.in ? (
-                                    <span style={{ color: 'var(--success)', fontWeight: 600 }}>{fmtTime(dayData.in)}</span>
-                                  ) : <span style={{ opacity: 0.3 }}>-</span>}
-                                </TD>
-                                <TD style={{ background: bgColor, textAlign: 'center', fontSize: '12px' }}>
-                                  {dayData && dayData.out ? (
-                                    <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{fmtTime(dayData.out)}</span>
-                                  ) : <span style={{ opacity: 0.3 }}>-</span>}
-                                </TD>
-                                <TD style={{ background: bgColor, textAlign: 'center', fontSize: '12px' }}>
-                                  {dayData && dayData.workHours > 0 ? (
-                                    <span style={{ fontWeight: 700 }}>{dayData.workHours.toFixed(1)}</span>
-                                  ) : <span style={{ opacity: 0.3 }}>-</span>}
-                                </TD>
-                              </React.Fragment>
-                            );
-                          })}
-                        </TR>
-                        {expandedEmployee === emp.employee_id && (
-                          <DetailRow>
-                            <DetailCell colSpan={3 + daysInMonth.length}>
-                              <div style={{ padding: '8px' }}>
-                                <strong>Detailed Records for {emp.employee_name}:</strong>
-                                <div style={{ marginTop: '8px' }}>
-                                  {Array.from(emp.attendance.entries())
-                                    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-                                    .map(([date, dayData]) => (
-                                      <div key={date} style={{ marginBottom: '4px' }}>
-                                        <strong>{new Date(date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}:</strong>{' '}
-                                        {dayData.records.map((rec, idx) => (
-                                          <span key={idx}>
-                                            {rec.attendence_type} at {fmtTime(rec.attendence_time)}
-                                            {idx < dayData.records.length - 1 ? ', ' : ''}
-                                          </span>
+                                return (
+                                  <React.Fragment key={day.dayNum}>
+                                    <TD style={{ background: bgColor, borderLeft: '1px solid rgba(255,255,255,0.05)', textAlign: 'center', fontSize: '12px' }}>
+                                      {dayData && dayData.in ? (
+                                        <span style={{ color: 'var(--success)', fontWeight: 600 }}>{fmtTime(dayData.in)}</span>
+                                      ) : <span style={{ opacity: 0.3 }}>-</span>}
+                                    </TD>
+                                    <TD style={{ background: bgColor, textAlign: 'center', fontSize: '12px' }}>
+                                      {dayData && dayData.out ? (
+                                        <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{fmtTime(dayData.out)}</span>
+                                      ) : <span style={{ opacity: 0.3 }}>-</span>}
+                                    </TD>
+                                    <TD style={{ background: bgColor, textAlign: 'center', fontSize: '12px' }}>
+                                      {dayData && dayData.workHours > 0 ? (
+                                        <span style={{ fontWeight: 700 }}>{dayData.workHours.toFixed(1)}</span>
+                                      ) : <span style={{ opacity: 0.3 }}>-</span>}
+                                    </TD>
+                                  </React.Fragment>
+                                );
+                              })}
+                            </TR>
+                            {expandedEmployee === emp.employee_id && (
+                              <DetailRow>
+                                <DetailCell colSpan={3 + daysInMonth.length}>
+                                  <div style={{ padding: '8px' }}>
+                                    <strong>Detailed Records for {emp.employee_name}:</strong>
+                                    <div style={{ marginTop: '8px' }}>
+                                      {Array.from(emp.attendance.entries())
+                                        .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+                                        .map(([date, dayData]) => (
+                                          <div key={date} style={{ marginBottom: '4px' }}>
+                                            <strong>{new Date(date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}:</strong>{' '}
+                                            {dayData.records.map((rec, idx) => (
+                                              <span key={idx} title={`Device: ${rec.device_id || 'Unknown'}`}>
+                                                {rec.attendence_type} at {fmtTime(rec.attendence_time)} ({rec.device_id || 'N/A'})
+                                                {idx < dayData.records.length - 1 ? ', ' : ''}
+                                              </span>
+                                            ))}
+                                            {dayData.workHours > 0 && (
+                                              <span style={{ marginLeft: '8px', color: '#10b981', fontWeight: 'bold' }}>
+                                                ({dayData.workHours.toFixed(1)} hours - {dayData.status?.label})
+                                              </span>
+                                            )}
+                                            {!dayData.workHours && dayData.status && (
+                                              <span style={{ marginLeft: '8px', color: '#f59e0b', fontWeight: 'bold' }}>
+                                                ({dayData.status.label})
+                                              </span>
+                                            )}
+                                          </div>
                                         ))}
-                                        {dayData.workHours > 0 && (
-                                          <span style={{ marginLeft: '8px', color: '#10b981', fontWeight: 'bold' }}>
-                                            ({dayData.workHours.toFixed(1)} hours - {dayData.status?.label})
-                                          </span>
-                                        )}
-                                        {!dayData.workHours && dayData.status && (
-                                          <span style={{ marginLeft: '8px', color: '#f59e0b', fontWeight: 'bold' }}>
-                                            ({dayData.status.label})
-                                          </span>
-                                        )}
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
-                            </DetailCell>
-                          </DetailRow>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </TBody>
-                </Table>
+                                    </div>
+                                  </div>
+                                </DetailCell>
+                              </DetailRow>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </TBody>
+                    </Table>
+                  ) : (
+                    <Table style={{ minWidth: `${250 + (daysInMonth.length * 80)}px` }}>
+                      <THead>
+                        <tr>
+                          <TH style={{ position: 'sticky', left: 0, background: 'var(--bg2)', zIndex: 30, minWidth: '250px', boxShadow: '4px 0 10px rgba(0,0,0,0.2)' }}>
+                            Employee Details
+                          </TH>
+                          {daysInMonth.map(day => (
+                            <TH key={day.dayNum} className={day.isSunday ? "sunday" : ""} style={{ textAlign: 'center', minWidth: '60px', padding: '12px 8px' }}>
+                              <div style={{ color: 'var(--text-muted)' }}>{day.date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}</div>
+                              <div style={{ fontSize: '10px', opacity: 0.7 }}>{day.date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                            </TH>
+                          ))}
+                        </tr>
+                      </THead>
+                      <TBody>
+                        {filteredEmployees.map((emp) => (
+                          <TR key={emp.employee_id}>
+                            <TD style={{ position: 'sticky', left: 0, background: 'var(--bg2)', zIndex: 25, borderRight: '1px solid var(--border)' }}>
+                              <EmployeeInfo>
+                                <EmployeeName>{emp.employee_name || 'N/A'}</EmployeeName>
+                                <EmployeeMeta>ID: {emp.employee_id} • {emp.department || 'N/A'}</EmployeeMeta>
+                              </EmployeeInfo>
+                            </TD>
+                            {daysInMonth.map(day => {
+                              const dayData = emp.attendance.get(day.dateStr);
+                              let abbr = '-';
+                              let bgColor = 'var(--bg1)';
+                              let textColor = 'var(--muted)';
+
+                              if (dayData && dayData.status) {
+                                abbr = getStatusAbbr(dayData.status.label);
+                                textColor = getHexColor(abbr);
+                                if (abbr === 'P') bgColor = 'rgba(16,185,129,0.05)';
+                                else if (abbr === 'A') bgColor = 'rgba(239,68,68,0.05)';
+                                else bgColor = 'rgba(245,158,11,0.05)';
+                              } else if (dayData && (dayData.in || dayData.out)) {
+                                abbr = (dayData.in && dayData.out) ? 'P' : 'SP';
+                                textColor = getHexColor(abbr);
+                                bgColor = abbr === 'P' ? 'rgba(16,185,129,0.05)' : 'rgba(245,158,11,0.05)';
+                              }
+
+                              return (
+                                <TD key={day.dayNum} style={{ textAlign: 'center', background: bgColor, borderLeft: '1px solid var(--border)' }}>
+                                  <span style={{ color: textColor, fontWeight: 'bold' }}>{abbr}</span>
+                                </TD>
+                              );
+                            })}
+                          </TR>
+                        ))}
+                      </TBody>
+                    </Table>
+                  )}
+                </TableInner>
               )}
             </TableWrapper>
           </Card>

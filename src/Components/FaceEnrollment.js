@@ -1,68 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
-import styled, { createGlobalStyle, keyframes } from "styled-components";
+import styled, { keyframes } from "styled-components";
 
-/* -------------------------------------------------------------------------- */
-/* Global Theme - Modern Design System                                        */
-/* -------------------------------------------------------------------------- */
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --text-secondary: #94a3b8;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
-    
-    /* Mappings for existing components in this file */
-    --brand: var(--primary);
-    --brand-light: var(--primary-2);
-    --ok: var(--success);
-    --err: var(--danger);
-    --warn: var(--warning);
-  }
-  
-  * { box-sizing: border-box; }
-  html, body, #root { height: 100%; }
-  
-  body {
-    margin: 0;
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    background:
-      radial-gradient(1200px 800px at -10% -10%, rgba(34,211,238,.25) 0%, transparent 60%),
-      radial-gradient(1400px 900px at 110% 10%, rgba(139,92,246,.25) 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.05);
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.15);
-    border-radius: 4px;
-  }
-`;
 
 /* -------------------------------------------------------------------------- */
 /* Animations                                                                 */
@@ -714,7 +653,6 @@ const EmployeeList = () => {
 
   return (
     <>
-      <GlobalStyle />
       <Page>
         <Container>
           <Header>

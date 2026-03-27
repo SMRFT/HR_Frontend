@@ -1,32 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import axios from 'axios';
 import {
     Calendar, Download, ChevronLeft, ChevronRight,
     Search, FileText, User, Layers, Clock, Shield
 } from 'lucide-react';
-
-const GlobalStyle = createGlobalStyle`
-  :root {
-    --bg1: #0f172a;
-    --bg2: #1e293b;
-    --primary: #6366f1;
-    --primary-2: #8b5cf6;
-    --accent: #22d3ee;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --glass: rgba(255,255,255,0.10);
-    --border: rgba(255,255,255,0.28);
-    --shadow: 0 12px 30px rgba(0,0,0,0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --ring: 0 0 0 3px rgba(99,102,241,0.25);
-    --transition: all .2s ease;
-  }
-`;
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -165,6 +145,67 @@ const SearchInput = styled.input`
   }
 `;
 
+const DatePickerWrapper = styled.div`
+  .custom-date-input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    width: 100px;
+    outline: none;
+    cursor: pointer;
+    text-align: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: rgba(255,255,255,0.05);
+    }
+  }
+
+  .react-datepicker {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-family: inherit;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+
+  .react-datepicker__header {
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    padding-top: 12px;
+  }
+
+  .react-datepicker__current-month,
+  .react-datepicker__day-name {
+    color: var(--text);
+  }
+
+  .react-datepicker__day {
+    color: var(--text);
+    border-radius: 8px;
+    
+    &:hover {
+      background: var(--primary);
+      color: white;
+    }
+  }
+
+  .react-datepicker__day--selected,
+  .react-datepicker__day--in-range {
+    background: var(--primary) !important;
+    color: white !important;
+  }
+
+  .react-datepicker__day--disabled {
+    color: var(--muted);
+    opacity: 0.3;
+  }
+`;
+
 const FilterSelect = styled.select`
   height: 44px;
   background: rgba(255,255,255,0.05);
@@ -179,6 +220,67 @@ const FilterSelect = styled.select`
 
   option {
     background: var(--bg2);
+  }
+`;
+
+const StyledSelect = styled.select`
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+  cursor: pointer;
+  min-width: 250px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+
+  &:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  }
+
+  option {
+    background: #1e293b;
+    color: #f1f5f9;
+  }
+`;
+
+const ChipContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  width: 100%;
+`;
+
+const DeptChip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: ${props => props.selected ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
+  color: ${props => props.selected ? '#818cf8' : '#94a3b8'};
+  border: 1px solid ${props => props.selected ? 'rgba(99, 102, 241, 0.3)' : 'transparent'};
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.selected ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    transform: translateY(-1px);
   }
 `;
 
@@ -213,16 +315,29 @@ const Card = styled.div`
   box-shadow: var(--shadow);
 `;
 
+/* Top-scroll: flip outer so scrollbar appears at top */
 const TableWrapper = styled.div`
+  transform: rotateX(180deg);
   overflow-x: auto;
-  
-  &::-webkit-scrollbar {
-    height: 8px;
-  }
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar { height: 8px; }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.25);
     border-radius: 4px;
   }
+  &::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+  }
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.25) rgba(255,255,255,0.05);
+`;
+
+/* Counter-flip so content renders normally */
+const TableInner = styled.div`
+  transform: rotateX(180deg);
+  padding: clamp(12px, 2vw, 20px);
 `;
 
 const Table = styled.table`
@@ -288,35 +403,49 @@ const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
 const RosterReport = () => {
     const [employees, setEmployees] = useState([]);
     const [rosterData, setRosterData] = useState([]);
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDept, setSelectedDept] = useState('All');
+    
+    const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const [endDate, setEndDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+
+    const [departments, setDepartments] = useState([]);
+    const [selectedDepts, setSelectedDepts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('matrix'); // 'matrix' | 'list'
 
     useEffect(() => {
         const role = localStorage.getItem('role');
-        const dept = localStorage.getItem('department');
+        const dept = localStorage.getItem('department_id');
         if (role && role !== 'Admin' && dept) {
-            setSelectedDept(dept);
+            setSelectedDepts([dept]);
         }
     }, []);
 
-    const fetchReportData = async () => {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth() + 1;
-        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    const ymd = (d) => {
+        if (!d) return null;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
+    const fetchReportData = async () => {
         const role = localStorage.getItem('role');
-        const dept = localStorage.getItem('department');
-        const isRestricted = role && role !== 'Admin' && dept;
+        const dept = localStorage.getItem('department_id');
+
+        const from_date = ymd(startDate);
+        const to_date = endDate ? ymd(new Date(endDate.getTime() + 86400000)) : ymd(startDate);
 
         try {
             let empUrl = `${HRbaseurl}employees_from_global/`;
-            let rosterUrl = `${HRbaseurl}roster/?month=${monthStr}`;
+            let rosterUrl = `${HRbaseurl}roster/?from_date=${from_date}&to_date=${to_date}`;
 
-            if (isRestricted) {
+            if (role && role !== 'Admin' && dept) {
                 empUrl += `?department=${encodeURIComponent(dept)}`;
                 rosterUrl += `&department=${encodeURIComponent(dept)}`;
+            } else if (selectedDepts.length > 0) {
+                const dStr = selectedDepts.join(',');
+                empUrl += `?department=${encodeURIComponent(dStr)}`;
+                rosterUrl += `&department=${encodeURIComponent(dStr)}`;
             }
 
             const [empRes, rosterRes] = await Promise.all([
@@ -327,7 +456,8 @@ const RosterReport = () => {
             const formattedEmps = empRes.data.map(e => ({
                 id: e.employeeId,
                 name: e.employeeName || e.name || e.employeeId,
-                department: e.department || 'Unassigned'
+                department: e.department || 'Unassigned',
+                department_id: e.departmentId || e.department_id
             }));
 
             setEmployees(formattedEmps);
@@ -339,12 +469,33 @@ const RosterReport = () => {
 
     useEffect(() => {
         fetchReportData();
-    }, [currentDate]);
+    }, [startDate, endDate, selectedDepts]);
+
+    useEffect(() => {
+        const fetchDepts = async () => {
+            try {
+                const res = await axios.get(`${HRbaseurl}departments/`);
+                setDepartments(Array.isArray(res.data) ? res.data : []);
+            } catch (err) {
+                console.error("Failed to fetch departments", err);
+            }
+        };
+        fetchDepts();
+    }, []);
+
+    const toggleDepartment = (deptId) => {
+        if (deptId === 'All') {
+            setSelectedDepts([]);
+        } else {
+            setSelectedDepts([deptId]);
+        }
+    };
 
     const changeMonth = (delta) => {
-        const newDate = new Date(currentDate);
+        const newDate = new Date(startDate);
         newDate.setMonth(newDate.getMonth() + delta);
-        setCurrentDate(newDate);
+        setStartDate(new Date(newDate.getFullYear(), newDate.getMonth(), 1));
+        setEndDate(new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0));
     };
 
     const uniqueDepartments = useMemo(() => {
@@ -354,12 +505,11 @@ const RosterReport = () => {
     // Filter logic
     const filteredEmployees = useMemo(() => {
         return employees.filter(e => {
-            const matchesDept = selectedDept === 'All' || e.department === selectedDept;
             const matchesSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 e.id.toLowerCase().includes(searchTerm.toLowerCase());
-            return matchesDept && matchesSearch;
+            return matchesSearch;
         });
-    }, [employees, selectedDept, searchTerm]);
+    }, [employees, searchTerm]);
 
     const filteredRosterData = useMemo(() => {
         // For List View: Filter rosterData based on filteredEmployees and Departments
@@ -369,26 +519,29 @@ const RosterReport = () => {
             .sort((a, b) => new Date(a.date) - new Date(b.date));
     }, [rosterData, filteredEmployees]);
 
-    const daysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-    const daysArray = Array.from({ length: daysInMonth(currentDate) }, (_, i) => i + 1);
+    const daysArray = useMemo(() => {
+        const days = [];
+        let curr = new Date(startDate);
+        while (curr <= endDate) {
+            days.push(new Date(curr));
+            curr.setDate(curr.getDate() + 1);
+        }
+        return days;
+    }, [startDate, endDate]);
 
-    const getShiftCode = (empId, day) => {
-        const year = currentDate.getFullYear();
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const dayStr = String(day).padStart(2, '0');
-        const dateStr = `${year}-${month}-${dayStr}`;
+    const getShiftCode = (empId, dateObj) => {
+        const dateStr = dateObj.toISOString().split('T')[0];
         const schedule = rosterData.find(s => s.employee == empId && s.date === dateStr);
         return schedule ? schedule.shift_name : null;
     };
 
     // Construct Export URL (Matrix)
     const getMatrixExportUrl = () => {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth() + 1;
-        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-        let url = `${HRbaseurl}roster/export/?month=${monthStr}`;
-        if (selectedDept !== 'All') {
-            url += `&department=${encodeURIComponent(selectedDept)}`;
+        const from_date = startDate.toISOString().split('T')[0];
+        const to_date = endDate.toISOString().split('T')[0];
+        let url = `${HRbaseurl}roster/export/?from_date=${from_date}&to_date=${to_date}`;
+        if (selectedDepts.length > 0) {
+            url += `&department=${encodeURIComponent(selectedDepts.join(','))}`;
         }
         return url;
     };
@@ -419,7 +572,7 @@ const RosterReport = () => {
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", `Roster_List_${currentDate.toISOString().slice(0, 7)}.csv`);
+        link.setAttribute("download", `Roster_List_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -434,7 +587,7 @@ const RosterReport = () => {
 
     return (
         <Page>
-            <GlobalStyle />
+
             <Container>
                 <Header>
                     <HeaderTop>
@@ -471,21 +624,22 @@ const RosterReport = () => {
                                 />
                             </div>
 
-                            <MonthSelector>
-                                <IconButton onClick={() => changeMonth(-1)}><ChevronLeft size={20} /></IconButton>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '12px', border: '1px solid var(--border)', height: '44px' }}>
                                 <Calendar size={16} color="#818cf8" />
-                                <span>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
-                                <IconButton onClick={() => changeMonth(1)}><ChevronRight size={20} /></IconButton>
-                            </MonthSelector>
-
-                            <FilterSelect
-                                value={selectedDept}
-                                onChange={(e) => setSelectedDept(e.target.value)}
-                            >
-                                {uniqueDepartments.map(dept => (
-                                    <option key={dept} value={dept}>{dept}</option>
-                                ))}
-                            </FilterSelect>
+                                <DatePicker
+                                    selectsRange={true}
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                    onChange={(update) => {
+                                        const [start, end] = update;
+                                        setStartDate(start);
+                                        setEndDate(end);
+                                    }}
+                                    dateFormat="dd MMM yyyy"
+                                    className="custom-date-input"
+                                    placeholderText="Select date range"
+                                />
+                            </div>
 
                             {viewMode === 'matrix' ? (
                                 <Button href={getMatrixExportUrl()} target="_blank" download>
@@ -500,6 +654,23 @@ const RosterReport = () => {
                             )}
                         </Controls>
                     </HeaderTop>
+
+                    {(localStorage.getItem('role') === 'Admin' || !localStorage.getItem('department_id')) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                            <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '500' }}>Filter by Department:</span>
+                            <StyledSelect 
+                                value={selectedDepts.length === 0 ? 'All' : selectedDepts[0]} 
+                                onChange={(e) => toggleDepartment(e.target.value)}
+                            >
+                                <option value="All">All Departments</option>
+                                {departments.map(dept => (
+                                    <option key={dept.id} value={String(dept.id)}>
+                                        {dept.name}
+                                    </option>
+                                ))}
+                            </StyledSelect>
+                        </div>
+                    )}
                 </Header>
 
                 <StatsGrid>
@@ -523,92 +694,101 @@ const RosterReport = () => {
 
                 <Card>
                     <TableWrapper>
-                        {viewMode === 'matrix' ? (
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <TH>Employee</TH>
-                                        <TH>Department</TH>
-                                        {daysArray.map(d => (
-                                            <TH key={d} style={{ minWidth: '40px', textAlign: 'center' }}>{d}</TH>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredEmployees.length > 0 ? (
-                                        filteredEmployees.map(emp => (
-                                            <tr key={emp.id}>
-                                                <TD>
-                                                    <div style={{ fontWeight: 600 }}>{emp.name}</div>
-                                                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{emp.id}</div>
-                                                </TD>
-                                                <TD>{emp.department}</TD>
-                                                {daysArray.map(d => {
-                                                    const shiftName = getShiftCode(emp.id, d);
-                                                    return (
-                                                        <TD key={d}>
-                                                            {shiftName ? (
-                                                                <ShiftBadge isOff={false}>{shiftName}</ShiftBadge>
-                                                            ) : (
-                                                                <ShiftBadge isOff={true}>-</ShiftBadge>
-                                                            )}
-                                                        </TD>
-                                                    );
-                                                })}
-                                            </tr>
-                                        ))
-                                    ) : (
+                        <TableInner>
+                            {viewMode === 'matrix' ? (
+                                <Table>
+                                    <thead>
                                         <tr>
-                                            <TD colSpan={daysArray.length + 2} style={{ textAlign: 'center', padding: '40px' }}>
-                                                No employees found.
-                                            </TD>
+                                            <TH>Employee</TH>
+                                            <TH>Department</TH>
+                                            {daysArray.map((dateObj, idx) => {
+                                                const d = dateObj.getDate();
+                                                const isSunday = dateObj.getDay() === 0;
+                                                return (
+                                                    <TH key={idx} style={{ minWidth: '40px', textAlign: 'center', color: isSunday ? '#ef4444' : 'var(--muted)' }}>
+                                                        {d}
+                                                        <div style={{ fontSize: '9px', opacity: 0.6 }}>{dateObj.toLocaleString('default', { month: 'short' })}</div>
+                                                    </TH>
+                                                );
+                                            })}
                                         </tr>
-                                    )}
-                                </tbody>
-                            </Table>
-                        ) : (
-                            <Table style={{ minWidth: '100%' }}>
-                                <thead>
-                                    <tr>
-                                        <TH style={{ textAlign: 'left', position: 'static' }}>Date</TH>
-                                        <TH style={{ textAlign: 'left', position: 'static' }}>Employee</TH>
-                                        <TH style={{ textAlign: 'left', position: 'static' }}>Department</TH>
-                                        <TH style={{ textAlign: 'center' }}>Shift</TH>
-                                        <TH style={{ textAlign: 'center' }}>Start Time</TH>
-                                        <TH style={{ textAlign: 'center' }}>End Time</TH>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredRosterData.length > 0 ? (
-                                        filteredRosterData.map((row, idx) => {
-                                            const emp = employees.find(e => e.id === row.employee);
-                                            const dept = emp ? emp.department : 'Unassigned';
-                                            return (
-                                                <tr key={row.id || idx}>
-                                                    <TD style={{ textAlign: 'left', position: 'static', background: 'transparent' }}>{row.date}</TD>
-                                                    <TD style={{ textAlign: 'left', position: 'static', background: 'transparent' }}>
-                                                        <div style={{ fontWeight: 600 }}>{row.employee_name}</div>
-                                                        <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{row.employee}</div>
-                                                    </TD>
-                                                    <TD style={{ textAlign: 'left', background: 'transparent' }}>{dept}</TD>
+                                    </thead>
+                                    <tbody>
+                                        {filteredEmployees.length > 0 ? (
+                                            filteredEmployees.map(emp => (
+                                                <tr key={emp.id}>
                                                     <TD>
-                                                        <ShiftBadge isOff={false}>{row.shift_name}</ShiftBadge>
+                                                        <div style={{ fontWeight: 600 }}>{emp.name}</div>
+                                                        <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{emp.id}</div>
                                                     </TD>
-                                                    <TD>{row.start_time}</TD>
-                                                    <TD>{row.end_time}</TD>
+                                                    <TD>{emp.department}</TD>
+                                                    {daysArray.map((dateObj, idx) => {
+                                                        const shiftName = getShiftCode(emp.id, dateObj);
+                                                        return (
+                                                            <TD key={idx}>
+                                                                {shiftName ? (
+                                                                    <ShiftBadge isOff={false}>{shiftName}</ShiftBadge>
+                                                                ) : (
+                                                                    <ShiftBadge isOff={true}>-</ShiftBadge>
+                                                                )}
+                                                            </TD>
+                                                        );
+                                                    })}
                                                 </tr>
-                                            );
-                                        })
-                                    ) : (
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <TD colSpan={daysArray.length + 2} style={{ textAlign: 'center', padding: '40px' }}>
+                                                    No employees found.
+                                                </TD>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </Table>
+                            ) : (
+                                <Table style={{ minWidth: '100%' }}>
+                                    <thead>
                                         <tr>
-                                            <TD colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
-                                                No shifts assigned for current selection.
-                                            </TD>
+                                            <TH style={{ textAlign: 'left', position: 'static' }}>Date</TH>
+                                            <TH style={{ textAlign: 'left', position: 'static' }}>Employee</TH>
+                                            <TH style={{ textAlign: 'left', position: 'static' }}>Department</TH>
+                                            <TH style={{ textAlign: 'center' }}>Shift</TH>
+                                            <TH style={{ textAlign: 'center' }}>Start Time</TH>
+                                            <TH style={{ textAlign: 'center' }}>End Time</TH>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </Table>
-                        )}
+                                    </thead>
+                                    <tbody>
+                                        {filteredRosterData.length > 0 ? (
+                                            filteredRosterData.map((row, idx) => {
+                                                const emp = employees.find(e => e.id === row.employee);
+                                                const dept = emp ? emp.department : 'Unassigned';
+                                                return (
+                                                    <tr key={row.id || idx}>
+                                                        <TD style={{ textAlign: 'left', position: 'static', background: 'transparent' }}>{row.date}</TD>
+                                                        <TD style={{ textAlign: 'left', position: 'static', background: 'transparent' }}>
+                                                            <div style={{ fontWeight: 600 }}>{row.employee_name}</div>
+                                                            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{row.employee}</div>
+                                                        </TD>
+                                                        <TD style={{ textAlign: 'left', background: 'transparent' }}>{dept}</TD>
+                                                        <TD>
+                                                            <ShiftBadge isOff={false}>{row.shift_name}</ShiftBadge>
+                                                        </TD>
+                                                        <TD>{row.start_time}</TD>
+                                                        <TD>{row.end_time}</TD>
+                                                    </tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <tr>
+                                                <TD colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
+                                                    No shifts assigned for current selection.
+                                                </TD>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </Table>
+                            )}
+                        </TableInner>
                     </TableWrapper>
                 </Card>
             </Container>
