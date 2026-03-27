@@ -1824,6 +1824,7 @@ const ShiftManagement = () => {
                             onApprove={handleApproveImport}
                             isUploading={isUploading}
                             shifts={shifts}
+                            departments={departments}
                         />
                     )}
                 </>
@@ -1882,7 +1883,7 @@ const ModalFooter = styled.div`
   background: rgba(0, 0, 0, 0.2);
 `;
 
-const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = [] }) => {
+const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = [], departments = [] }) => {
     const [localPreview, setLocalPreview] = useState(data.preview);
 
     const handleCellChange = (empIdx, dateStr, newShiftName) => {
@@ -1955,6 +1956,11 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
                                         <Td style={{ minWidth: 120 }}>{emp.department}</Td>
                                         {(data.headers || []).map(dateStr => {
                                             const shift = emp.shifts[dateStr];
+                                            
+                                            // Filter shifts by department
+                                            const empDept = departments.find(d => d.name.toUpperCase() === emp.department.toUpperCase());
+                                            const availableShifts = empDept ? empDept.shifts : shifts;
+
                                             return (
                                                 <Td key={dateStr} style={{ padding: "4px" }}>
                                                     <select
@@ -1974,7 +1980,7 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
                                                         }}
                                                     >
                                                         <option value="">Off</option>
-                                                        {shifts.map(s => (
+                                                        {availableShifts.filter(s => s.is_active).map(s => (
                                                             <option key={s.id} value={s.name}>{s.name}</option>
                                                         ))}
                                                         {shift && !shift.is_valid && (

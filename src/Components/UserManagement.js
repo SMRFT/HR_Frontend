@@ -53,10 +53,12 @@ const Card = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
   overflow-y: auto;
+  overflow-x: auto;
   max-height: calc(100vh - 220px);
 
   &::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
   &::-webkit-scrollbar-track {
     background: transparent;
