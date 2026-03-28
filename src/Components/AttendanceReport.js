@@ -592,6 +592,15 @@ const FilterSelect = styled.select`
 `;
 
 // Helper Functions
+const dmy = (d) => {
+  if (!d || isNaN(new Date(d).getTime())) return "";
+  const dateObj = new Date(d);
+  const dd = String(dateObj.getDate()).padStart(2, "0");
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const yyyy = dateObj.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
+
 const ymd = (d) => {
   if (!d || isNaN(new Date(d).getTime())) return "";
   const dateObj = new Date(d);
@@ -981,7 +990,7 @@ export default function AttendanceReport() {
   const handleExportStatus = () => {
     const headers = [
       "S.No", "Employee ID", "Employee Name", "Department", "Designation",
-      ...daysInMonth.map(day => day.dateStr)
+      ...daysInMonth.map(day => dmy(day.date))
     ];
 
     const rows = filteredEmployees.map((emp, idx) => {
@@ -1229,10 +1238,10 @@ export default function AttendanceReport() {
                           <TH rowSpan="2">Designation</TH>
                           {daysInMonth.map(day => (
                             <TH key={day.dayNum} colSpan="3" className={day.isSunday ? "sunday" : ""} style={{ textAlign: 'center', borderLeft: '1px solid var(--border)' }}>
-                              {day.date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}<br />
-                              <span style={{ fontSize: '10px', opacity: 0.7 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 800 }}>{dmy(day.date)}</div>
+                              <div style={{ fontSize: '11px', opacity: 0.7 }}>
                                 {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
-                              </span>
+                              </div>
                             </TH>
                           ))}
                         </tr>
@@ -1305,7 +1314,7 @@ export default function AttendanceReport() {
                                         .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
                                         .map(([date, dayData]) => (
                                           <div key={date} style={{ marginBottom: '4px' }}>
-                                            <strong>{new Date(date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}:</strong>{' '}
+                                            <strong>{dmy(new Date(date))}:</strong>{' '}
                                             {dayData.records.map((rec, idx) => (
                                               <span key={idx} title={`Device: ${rec.device_id || 'Unknown'}`}>
                                                 {rec.attendence_type} at {fmtTime(rec.attendence_time)} ({rec.device_id || 'N/A'})
@@ -1340,12 +1349,12 @@ export default function AttendanceReport() {
                           <TH style={{ position: 'sticky', left: 0, background: 'var(--bg2)', zIndex: 30, minWidth: '250px', boxShadow: '4px 0 10px rgba(0,0,0,0.2)' }}>
                             Employee Details
                           </TH>
-                          {daysInMonth.map(day => (
-                            <TH key={day.dayNum} className={day.isSunday ? "sunday" : ""} style={{ textAlign: 'center', minWidth: '60px', padding: '12px 8px' }}>
-                              <div style={{ color: 'var(--text-muted)' }}>{day.date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}</div>
-                              <div style={{ fontSize: '10px', opacity: 0.7 }}>{day.date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                            </TH>
-                          ))}
+                            {daysInMonth.map(day => (
+                              <TH key={day.dayNum} className={day.isSunday ? "sunday" : ""} style={{ textAlign: 'center', minWidth: '60px', padding: '12px 8px' }}>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '10px' }}>{dmy(day.date)}</div>
+                                <div style={{ fontSize: '12px', opacity: 0.8, fontWeight: 700 }}>{day.date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                              </TH>
+                            ))}
                         </tr>
                       </THead>
                       <TBody>

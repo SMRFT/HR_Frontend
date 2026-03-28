@@ -475,12 +475,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
       // For others, filter out restricted pages
       const restrictedPaths = [
-        '/register', 
-        '/user-register', 
-        '/user-management', 
-        '/HRAction', 
-        '/Hrregister', 
-        '/registered-devices', 
+        '/register',
+        '/user-register',
+        '/user-management',
+        '/HRAction',
+        '/Hrregister',
+        '/registered-devices',
         '/webcam'
       ];
       const filteredItems = section.items.filter(item => !restrictedPaths.includes(item.path));
@@ -497,7 +497,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
-    navigate('/');
+    navigate('/HR');
   };
 
   const closeMobileMenu = () => {

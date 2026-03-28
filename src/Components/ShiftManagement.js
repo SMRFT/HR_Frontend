@@ -1886,13 +1886,70 @@ const ModalFooter = styled.div`
 const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = [], departments = [] }) => {
     const [localPreview, setLocalPreview] = useState(data.preview);
 
+    const currentErrors = useMemo(() => {
+        const errorMap = new Map(); // empName -> Set of error strings
+
+        localPreview.forEach(emp => {
+            Object.entries(emp.shifts).forEach(([date, shift]) => {
+                if (shift && !shift.is_valid && shift.name !== "") {
+                    const msg = `Shift '${shift.name}' is not configured for department '${emp.department}'`;
+                    if (!errorMap.has(emp.name)) errorMap.set(emp.name, new Set());
+                    errorMap.get(emp.name).add(msg);
+                }
+            });
+        });
+
+        // Add backend errors, grouping them where possible
+        (data.errors || []).forEach(err => {
+            const empInError = localPreview.find(emp => err.includes(emp.name));
+            if (empInError) {
+                // Only keep if the employee still has invalid shifts
+                const hasInvalid = Object.values(empInError.shifts).some(s => s && !s.is_valid && s.name !== "");
+                if (hasInvalid) {
+                    // Extract the core message if it follows our new backend pattern
+                    let coreMsg = err;
+                    if (err.includes(':')) coreMsg = err.split(':').slice(1).join(':').split(' on ')[0].trim();
+                    
+                    if (!errorMap.has(empInError.name)) errorMap.set(empInError.name, new Set());
+                    errorMap.get(empInError.name).add(coreMsg);
+                }
+            } else {
+                // Global error
+                if (!errorMap.has("General")) errorMap.set("General", new Set());
+                errorMap.get("General").add(err);
+            }
+        });
+
+        // Convert Map to flat list of strings
+        const finalErrors = [];
+        errorMap.forEach((msgs, name) => {
+            msgs.forEach(msg => {
+                finalErrors.push(name === "General" ? msg : `${name}: ${msg}`);
+            });
+        });
+
+        return finalErrors;
+    }, [localPreview, data.errors]);
+
     const handleCellChange = (empIdx, dateStr, newShiftName) => {
         const updated = [...localPreview];
-        const shiftObj = shifts.find(s => s.name.toUpperCase() === newShiftName.toUpperCase());
+        const emp = updated[empIdx];
         
+        const trimmedNewShift = newShiftName.trim().toUpperCase();
+        if (trimmedNewShift === "") {
+            updated[empIdx].shifts[dateStr] = { name: "", is_valid: true };
+            setLocalPreview(updated);
+            return;
+        }
+
+        const shiftObj = shifts.find(s => s.name.trim().toUpperCase() === trimmedNewShift);
+        const empDept = departments.find(d => d.name.trim().toUpperCase() === emp.department.trim().toUpperCase());
+        const availableShifts = empDept ? empDept.shifts : shifts;
+        const isAllowedInDept = availableShifts.some(s => s.name.trim().toUpperCase() === trimmedNewShift);
+
         updated[empIdx].shifts[dateStr] = {
             name: shiftObj ? shiftObj.name : newShiftName,
-            is_valid: !!shiftObj
+            is_valid: !!(shiftObj && isAllowedInDept)
         };
         setLocalPreview(updated);
     };
@@ -1915,14 +1972,14 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
                 </ModalHeader>
                 
                 <ModalBody>
-                    {data.errors && data.errors.length > 0 && (
+                    {currentErrors.length > 0 && (
                         <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 12, padding: 16, marginBottom: 20 }}>
                             <div style={{ color: "#f87171", fontWeight: 700, fontSize: 14, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                                <XCircle size={16} /> Validation Errors
+                                <XCircle size={16} /> Validation Errors ({currentErrors.length})
                             </div>
                             <ul style={{ margin: 0, paddingLeft: 20, color: "#fca5a5", fontSize: 12 }}>
-                                {data.errors.slice(0, 10).map((err, i) => <li key={i}>{err}</li>)}
-                                {data.errors.length > 10 && <li>...and {data.errors.length - 10} more</li>}
+                                {currentErrors.slice(0, 10).map((err, i) => <li key={i}>{err}</li>)}
+                                {currentErrors.length > 10 && <li>...and {currentErrors.length - 10} more</li>}
                             </ul>
                         </div>
                     )}
@@ -1999,7 +2056,14 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
 
                 <ModalFooter>
                     <Button onClick={onClose} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)" }}>Cancel</Button>
-                    <Button onClick={handleApprove} disabled={isUploading}>
+                    <Button 
+                        onClick={handleApprove} 
+                        disabled={isUploading || currentErrors.length > 0}
+                        style={{
+                            opacity: (isUploading || currentErrors.length > 0) ? 0.5 : 1,
+                            cursor: (isUploading || currentErrors.length > 0) ? "not-allowed" : "pointer"
+                        }}
+                    >
                         {isUploading ? "Importing..." : "Approve & Import"}
                     </Button>
                 </ModalFooter>

@@ -78,7 +78,7 @@ function ProtectedLayout({ children }) {
 // Public Routes Component (Redirects to dashboard if already logged in)
 function PublicRoute({ children }) {
   const token = localStorage.getItem("access_token");
-  
+
   if (token) {
     // Redirect to dashboard if already authenticated
     const role = localStorage.getItem("role");
@@ -188,7 +188,7 @@ function App() {
             <UserManagement />
           </ProtectedLayout>
         } />
-        
+
         <Route path="/registered-devices" element={
           <ProtectedLayout>
             <RegisteredDevices />
