@@ -1887,57 +1887,62 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
     const [localPreview, setLocalPreview] = useState(data.preview);
 
     const currentErrors = useMemo(() => {
-        const errorMap = new Map(); // empName -> Set of error strings
+        const errorMap = new Map(); // empName -> Set of clean error messages
 
+        // 1. Scan the current local grid for ALL shift config errors (Source of Truth)
         localPreview.forEach(emp => {
             Object.entries(emp.shifts).forEach(([date, shift]) => {
                 if (shift && !shift.is_valid && shift.name !== "") {
-                    const msg = `Shift '${shift.name}' is not configured for department '${emp.department}'`;
+                    // Try to be descriptive about the type of error
+                    const shiftExistsGlobally = shifts.some(s => s.name.trim().toUpperCase() === shift.name.trim().toUpperCase());
+                    const msg = shiftExistsGlobally 
+                        ? `Shift '${shift.name}' is not configured for department '${emp.department}'`
+                        : `Shift '${shift.name}' not found in system configuration`;
+                    
                     if (!errorMap.has(emp.name)) errorMap.set(emp.name, new Set());
                     errorMap.get(emp.name).add(msg);
                 }
             });
         });
 
-        // Add backend errors, grouping them where possible
+        // 2. Process backend errors: exclude those we've already handled or fixed in the grid
         (data.errors || []).forEach(err => {
+            // IGNORE all shift-related errors from backend because we scan them locally in Step 1 (Source of Truth)
+            if (err.toLowerCase().includes('shift')) return;
+
             const empInError = localPreview.find(emp => err.includes(emp.name));
             if (empInError) {
-                // Only keep if the employee still has invalid shifts
-                const hasInvalid = Object.values(empInError.shifts).some(s => s && !s.is_valid && s.name !== "");
-                if (hasInvalid) {
-                    // Extract the core message if it follows our new backend pattern
-                    let coreMsg = err;
-                    if (err.includes(':')) coreMsg = err.split(':').slice(1).join(':').split(' on ')[0].trim();
-                    
-                    if (!errorMap.has(empInError.name)) errorMap.set(empInError.name, new Set());
-                    errorMap.get(empInError.name).add(coreMsg);
-                }
+                // For other errors (missing employee, etc), keep if relevant
+                if (!errorMap.has(empInError.name)) errorMap.set(empInError.name, new Set());
+                errorMap.get(empInError.name).add(err.includes(':') ? err.split(':').slice(1).join(':').trim() : err);
             } else {
-                // Global error
+                // General error or employee not in preview
                 if (!errorMap.has("General")) errorMap.set("General", new Set());
                 errorMap.get("General").add(err);
             }
         });
 
-        // Convert Map to flat list of strings
         const finalErrors = [];
+        // Sort to show General errors first
+        if (errorMap.has("General")) {
+            errorMap.get("General").forEach(msg => finalErrors.push(msg));
+        }
         errorMap.forEach((msgs, name) => {
-            msgs.forEach(msg => {
-                finalErrors.push(name === "General" ? msg : `${name}: ${msg}`);
-            });
+            if (name === "General") return;
+            msgs.forEach(msg => finalErrors.push(`${name}: ${msg}`));
         });
 
         return finalErrors;
-    }, [localPreview, data.errors]);
+    }, [localPreview, data.errors, shifts]);
 
     const handleCellChange = (empIdx, dateStr, newShiftName) => {
         const updated = [...localPreview];
-        const emp = updated[empIdx];
+        const emp = { ...updated[empIdx], shifts: { ...updated[empIdx].shifts } };
         
         const trimmedNewShift = newShiftName.trim().toUpperCase();
         if (trimmedNewShift === "") {
-            updated[empIdx].shifts[dateStr] = { name: "", is_valid: true };
+            emp.shifts[dateStr] = { name: "", is_valid: true };
+            updated[empIdx] = emp;
             setLocalPreview(updated);
             return;
         }
@@ -1947,10 +1952,11 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
         const availableShifts = empDept ? empDept.shifts : shifts;
         const isAllowedInDept = availableShifts.some(s => s.name.trim().toUpperCase() === trimmedNewShift);
 
-        updated[empIdx].shifts[dateStr] = {
+        emp.shifts[dateStr] = {
             name: shiftObj ? shiftObj.name : newShiftName,
             is_valid: !!(shiftObj && isAllowedInDept)
         };
+        updated[empIdx] = emp;
         setLocalPreview(updated);
     };
 
@@ -2015,7 +2021,7 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
                                             const shift = emp.shifts[dateStr];
                                             
                                             // Filter shifts by department
-                                            const empDept = departments.find(d => d.name.toUpperCase() === emp.department.toUpperCase());
+                                            const empDept = departments.find(d => d.name.trim().toUpperCase() === emp.department.trim().toUpperCase());
                                             const availableShifts = empDept ? empDept.shifts : shifts;
 
                                             return (
