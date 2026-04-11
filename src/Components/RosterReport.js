@@ -428,6 +428,14 @@ const RosterReport = () => {
         return `${year}-${month}-${day}`;
     };
 
+    const dmy = (d) => {
+        if (!d) return '';
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     const fetchReportData = async () => {
         const role = localStorage.getItem('role');
         const dept = localStorage.getItem('department_id');
@@ -552,8 +560,9 @@ const RosterReport = () => {
         const rows = filteredRosterData.map(r => {
             // Find dept from employee list
             const emp = employees.find(e => e.id === r.employee);
+            const rDate = new Date(r.date);
             return [
-                r.date,
+                dmy(rDate),
                 r.employee,
                 r.employee_name,
                 emp ? emp.department : 'Unassigned',
@@ -702,12 +711,11 @@ const RosterReport = () => {
                                             <TH>Employee</TH>
                                             <TH>Department</TH>
                                             {daysArray.map((dateObj, idx) => {
-                                                const d = dateObj.getDate();
                                                 const isSunday = dateObj.getDay() === 0;
                                                 return (
                                                     <TH key={idx} style={{ minWidth: '40px', textAlign: 'center', color: isSunday ? '#ef4444' : 'var(--muted)' }}>
-                                                        {d}
-                                                        <div style={{ fontSize: '9px', opacity: 0.6 }}>{dateObj.toLocaleString('default', { month: 'short' })}</div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800 }}>{dmy(dateObj)}</div>
+                                                    <div style={{ fontSize: '10px', opacity: 0.7 }}>{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                                                     </TH>
                                                 );
                                             })}
@@ -764,7 +772,7 @@ const RosterReport = () => {
                                                 const dept = emp ? emp.department : 'Unassigned';
                                                 return (
                                                     <tr key={row.id || idx}>
-                                                        <TD style={{ textAlign: 'left', position: 'static', background: 'transparent' }}>{row.date}</TD>
+                                                        <TD style={{ textAlign: 'left', position: 'static', background: 'transparent' }}>{dmy(new Date(row.date))}</TD>
                                                         <TD style={{ textAlign: 'left', position: 'static', background: 'transparent' }}>
                                                             <div style={{ fontWeight: 600 }}>{row.employee_name}</div>
                                                             <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{row.employee}</div>

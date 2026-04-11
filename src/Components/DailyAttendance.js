@@ -99,6 +99,24 @@ const StatLabel = styled.div`
   gap: 8px;
 `;
 
+const LoadingOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius);
+  color: white;
+  font-weight: 600;
+  gap: 12px;
+`;
+
 const StatValue = styled.div`
   font-size: 32px;
   font-weight: 800;
@@ -409,6 +427,7 @@ const CurrentDate = styled.div`
 
 export default function DailyAttendance() {
   const [data, setData] = useState([]);
+  const [availableCount, setAvailableCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
   // State for Filters & Sorting
@@ -445,16 +464,24 @@ export default function DailyAttendance() {
       const uRole = (localStorage.getItem('role') || '').toLowerCase();
       const uDept = localStorage.getItem('department_id') || localStorage.getItem('dept');
 
+      let deptParam = '';
       if (uRole && uRole !== 'admin' && uDept) {
         params.department = uDept;
+        deptParam = `?department=${uDept}`;
       } else if (selectedDepts.length > 0) {
-        params.department = selectedDepts.join(',');
+        const dStr = selectedDepts.join(',');
+        params.department = dStr;
+        deptParam = `?department=${encodeURIComponent(dStr)}`;
       }
 
-      const res = await api.get(`attendance-report/`, { params });
+      const [res, empRes] = await Promise.all([
+          api.get(`attendance-report/`, { params }),
+          api.get(`employees_from_global/${deptParam}`)
+      ]);
 
       setData(Array.isArray(res.data) ? res.data : []);
-      console.log("DailyAttendance: Fetched", res.data?.length, "records");
+      setAvailableCount(Array.isArray(empRes.data) ? empRes.data.length : 0);
+      console.log("DailyAttendance: Fetched", res.data?.length, "records of", empRes.data?.length, "avail");
     } catch (err) {
       console.error("Fetch error:", err);
     } finally {
@@ -495,6 +522,15 @@ export default function DailyAttendance() {
     );
   };
 
+  const dmy = (d) => {
+    if (!d || isNaN(new Date(d).getTime())) return "--/--/----";
+    const dateObj = new Date(d);
+    const dd = String(dateObj.getDate()).padStart(2, "0");
+    const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const yyyy = dateObj.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
   const ymd = (date) => {
     if (!date) return '';
     const d = new Date(date);
@@ -526,7 +562,7 @@ export default function DailyAttendance() {
       const attDate = new Date(record.attendence_time);
       if (isNaN(attDate.getTime())) return;
 
-      const recordDate = attDate.toLocaleDateString();
+      const recordDate = dmy(attDate);
       const groupKey = `${eid}_${recordDate}`;
 
       if (!map.has(groupKey)) {
@@ -643,26 +679,32 @@ export default function DailyAttendance() {
 
   // Stats
   const stats = useMemo(() => {
-    return {
-      total: processed.length,
-      present: processed.filter(p => p.status === 'present').length,
-      out: processed.filter(p => p.status === 'out').length,
-      late: processed.filter(p => {
+    const punchedEmployees = processed.filter(p => p.status !== 'absent');
+    const presentCount = punchedEmployees.filter(p => p.status === 'present').length;
+    const totalPunched = punchedEmployees.length;
+    const lateCount = punchedEmployees.filter(p => {
         if (!p.firstIn) return false;
         const d = new Date(p.firstIn);
         const hour = d.getHours() + d.getMinutes() / 60;
         return hour > 9.25;
-      }).length
-    };
-  }, [processed]);
+      }).length;
 
-  const onTime = stats.total - stats.late;
+    return {
+      available: availableCount,
+      total: totalPunched, // Total who showed up (status !== absent)
+      present: presentCount, // Currently checked-in
+      out: punchedEmployees.filter(p => p.status === 'out').length,
+      late: lateCount,
+      onTime: totalPunched - lateCount,
+      absent: Math.max(0, availableCount - totalPunched)
+    };
+  }, [processed, availableCount]);
 
   // Handlers
   const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+      direction = direction === 'asc' ? 'desc' : 'asc';
     }
     setSortConfig({ key, direction });
   };
@@ -670,53 +712,53 @@ export default function DailyAttendance() {
   const fmtTime = (t) => t ? new Date(t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-';
 
   return (
-    <>
+    <Page>
+      <Container>
+        {loading && <LoadingOverlay><RefreshCw className="spin" /> Loading attendance...</LoadingOverlay>}
+        
+        <Header>
+          <TitleBlock>
+            <Title>Daily Monitoring</Title>
+            <Subtitle>
+              Real-time attendance tracking for {activeDepartments.length - 1 || departments.length} departments
+            </Subtitle>
+          </TitleBlock>
 
-      <Page>
-        <Container>
-          <Header>
-            <TitleBlock>
-              <Title>
-                <Clock size={32} />
-                Attendance Overview
-              </Title>
-              <Subtitle>
-                {filteredAndSorted.length} record(s) found.
-                {statusFilter !== 'All' ? ` Filter: ${statusFilter}` : ''}
-                {selectedDepts.length > 0 ? ` Departments: ${selectedDepts.length}` : ''}
-              </Subtitle>
-            </TitleBlock>
+          <CurrentDate>
+            <Calendar size={16} />
+            {dmy(fromDate)}
+            {toDate && toDate.toDateString() !== fromDate?.toDateString() && (
+              <> - {dmy(toDate)}</>
+            )}
+          </CurrentDate>
+        </Header>
 
-            <CurrentDate>
-              <Calendar size={16} />
-              {fromDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              {toDate && toDate.getTime() !== fromDate?.getTime() && (
-                <> - {toDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
-              )}
-            </CurrentDate>
-          </Header>
+        <StatsGrid>
+          <StatCard $color="var(--primary, #6366f1)">
+            <StatLabel><Users size={16} /> Total Available</StatLabel>
+            <StatValue>{stats.available}</StatValue>
+          </StatCard>
 
-          <StatsGrid>
-            <StatCard $color="#6366f1">
-              <StatLabel><Users size={16} /> Total Present</StatLabel>
-              <StatValue>{stats.total}</StatValue>
-            </StatCard>
+          <StatCard $color="#10b981">
+            <StatLabel><CheckCircle size={16} /> Today Total Present</StatLabel>
+            <StatValue>{stats.total}</StatValue>
+          </StatCard>
 
-            <StatCard $color="#10b981">
-              <StatLabel><CheckCircle size={16} /> On Time</StatLabel>
-              <StatValue>{onTime}</StatValue>
-            </StatCard>
+          <StatCard $color="#ef4444">
+            <StatLabel><AlertTriangle size={16} /> Today Total Absent</StatLabel>
+            <StatValue>{stats.absent}</StatValue>
+          </StatCard>
 
-            <StatCard $color="#f59e0b">
-              <StatLabel><AlertTriangle size={16} /> Late Arrivals</StatLabel>
-              <StatValue>{stats.late}</StatValue>
-            </StatCard>
+          <StatCard $color="#10b981">
+            <StatLabel><ArrowUpRight size={16} /> Today On Time</StatLabel>
+            <StatValue>{stats.onTime}</StatValue>
+          </StatCard>
 
-            <StatCard $color="#22d3ee">
-              <StatLabel><RefreshCw size={16} /> Currently Active</StatLabel>
-              <StatValue>{stats.present}</StatValue>
-            </StatCard>
-          </StatsGrid>
+          <StatCard $color="#f59e0b">
+            <StatLabel><Clock size={16} /> Today Late Arrivals</StatLabel>
+            <StatValue>{stats.late}</StatValue>
+          </StatCard>
+        </StatsGrid>
 
           <MainCard>
             <Toolbar>
@@ -906,8 +948,7 @@ export default function DailyAttendance() {
               </Table></TableInner></TableWrapper>
             )}
           </MainCard>
-        </Container>
-      </Page>
-    </>
+      </Container>
+    </Page>
   );
 }

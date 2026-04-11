@@ -676,6 +676,15 @@ const ymd = (d) => {
     return `${yyyy}-${mm}-${dd}`;
 };
 
+const dmy = (d) => {
+    if (!d || isNaN(new Date(d).getTime())) return "";
+    const dateObj = new Date(d);
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const dd = String(dateObj.getDate()).padStart(2, "0");
+    return `${dd}/${mm}/${yyyy}`;
+};
+
 const getDaysInRange = (start, end) => {
     if (!start || !end) return [];
     const days = [];
@@ -688,7 +697,8 @@ const getDaysInRange = (start, end) => {
         days.push({
             day: curr.getDate(),
             dateStr: ymd(curr),
-            dayName: curr.toLocaleDateString('en-US', { weekday: 'narrow' }),
+            date: new Date(curr),
+            dayName: curr.toLocaleDateString('en-US', { weekday: 'short' }),
             isWeekend: curr.getDay() === 0 || curr.getDay() === 6,
             isSunday: curr.getDay() === 0,
         });
@@ -898,7 +908,7 @@ const RosterAttendanceReport = () => {
 
         if (viewMode === 'matrix') {
             const headerRow1 = ['S.No', 'Employee ID', 'Employee Name', 'Department', 'Designation',
-                ...daysInMonth.flatMap(d => [`${d.dateStr} ${d.dayName}`, '', '', '', ''])];
+                ...daysInMonth.flatMap(d => [`${dmy(d.date)} ${d.dayName}`, '', '', '', ''])];
             const headerRow2 = ['', '', '', '', '', ...daysInMonth.flatMap(() => ['Shift', 'In', 'Out', 'Total', 'Late/Early'])];
             const dataRows = matrixData.map((emp, idx) => {
                 const row = [idx + 1, emp.id || '', emp.name || '', emp.dept || '', emp.desg || ''];
@@ -1138,8 +1148,8 @@ const RosterAttendanceReport = () => {
                                                     className={`center${d.isWeekend ? ' weekend' : ''}${d.isSunday ? ' sunday' : ''}`}
                                                     style={{ minWidth: 130, padding: '10px 6px', fontSize: 11 }}
                                                 >
-                                                    <div style={{ fontSize: 9, opacity: 0.7 }}>{d.dateStr}</div>
-                                                    <div style={{ fontSize: 13, fontWeight: 800 }}>{d.dayName}</div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800 }}>{dmy(d.date)}</div>
+                                                    <div style={{ fontSize: '9px', opacity: 0.7 }}>{d.dayName}</div>
                                                 </TH>
                                             ))}
                                         </tr>
@@ -1247,7 +1257,7 @@ const RosterAttendanceReport = () => {
                                                     </EmployeeCell>
                                                 </TD>
                                                 <TD style={{ color: 'var(--text-muted)' }}>{row.designation || '–'}</TD>
-                                                <TD style={{ fontWeight: 700, color: 'var(--primary-light,#a5b4fc)' }}>{row.date}</TD>
+                                                <TD style={{ fontWeight: 700, color: 'var(--primary-light,#a5b4fc)' }}>{dmy(new Date(row.date))}</TD>
                                                 <TD>
                                                     <div style={{ fontSize: 13, fontWeight: 600 }}>{row.shift_name || '–'}</div>
                                                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{row.shift_timing}</div>

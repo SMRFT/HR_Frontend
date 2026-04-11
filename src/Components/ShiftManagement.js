@@ -1886,14 +1886,77 @@ const ModalFooter = styled.div`
 const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = [], departments = [] }) => {
     const [localPreview, setLocalPreview] = useState(data.preview);
 
+    const currentErrors = useMemo(() => {
+        const errorMap = new Map(); // empName -> Set of clean error messages
+
+        // 1. Scan the current local grid for ALL shift config errors (Source of Truth)
+        localPreview.forEach(emp => {
+            Object.entries(emp.shifts).forEach(([date, shift]) => {
+                if (shift && !shift.is_valid && shift.name !== "") {
+                    // Try to be descriptive about the type of error
+                    const shiftExistsGlobally = shifts.some(s => s.name.trim().toUpperCase() === shift.name.trim().toUpperCase());
+                    const msg = shiftExistsGlobally 
+                        ? `Shift '${shift.name}' is not configured for department '${emp.department}'`
+                        : `Shift '${shift.name}' not found in system configuration`;
+                    
+                    if (!errorMap.has(emp.name)) errorMap.set(emp.name, new Set());
+                    errorMap.get(emp.name).add(msg);
+                }
+            });
+        });
+
+        // 2. Process backend errors: exclude those we've already handled or fixed in the grid
+        (data.errors || []).forEach(err => {
+            // IGNORE all shift-related errors from backend because we scan them locally in Step 1 (Source of Truth)
+            if (err.toLowerCase().includes('shift')) return;
+
+            const empInError = localPreview.find(emp => err.includes(emp.name));
+            if (empInError) {
+                // For other errors (missing employee, etc), keep if relevant
+                if (!errorMap.has(empInError.name)) errorMap.set(empInError.name, new Set());
+                errorMap.get(empInError.name).add(err.includes(':') ? err.split(':').slice(1).join(':').trim() : err);
+            } else {
+                // General error or employee not in preview
+                if (!errorMap.has("General")) errorMap.set("General", new Set());
+                errorMap.get("General").add(err);
+            }
+        });
+
+        const finalErrors = [];
+        // Sort to show General errors first
+        if (errorMap.has("General")) {
+            errorMap.get("General").forEach(msg => finalErrors.push(msg));
+        }
+        errorMap.forEach((msgs, name) => {
+            if (name === "General") return;
+            msgs.forEach(msg => finalErrors.push(`${name}: ${msg}`));
+        });
+
+        return finalErrors;
+    }, [localPreview, data.errors, shifts]);
+
     const handleCellChange = (empIdx, dateStr, newShiftName) => {
         const updated = [...localPreview];
-        const shiftObj = shifts.find(s => s.name.toUpperCase() === newShiftName.toUpperCase());
+        const emp = { ...updated[empIdx], shifts: { ...updated[empIdx].shifts } };
         
-        updated[empIdx].shifts[dateStr] = {
+        const trimmedNewShift = newShiftName.trim().toUpperCase();
+        if (trimmedNewShift === "") {
+            emp.shifts[dateStr] = { name: "", is_valid: true };
+            updated[empIdx] = emp;
+            setLocalPreview(updated);
+            return;
+        }
+
+        const shiftObj = shifts.find(s => s.name.trim().toUpperCase() === trimmedNewShift);
+        const empDept = departments.find(d => d.name.trim().toUpperCase() === emp.department.trim().toUpperCase());
+        const availableShifts = empDept ? empDept.shifts : shifts;
+        const isAllowedInDept = availableShifts.some(s => s.name.trim().toUpperCase() === trimmedNewShift);
+
+        emp.shifts[dateStr] = {
             name: shiftObj ? shiftObj.name : newShiftName,
-            is_valid: !!shiftObj
+            is_valid: !!(shiftObj && isAllowedInDept)
         };
+        updated[empIdx] = emp;
         setLocalPreview(updated);
     };
 
@@ -1915,14 +1978,14 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
                 </ModalHeader>
                 
                 <ModalBody>
-                    {data.errors && data.errors.length > 0 && (
+                    {currentErrors.length > 0 && (
                         <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 12, padding: 16, marginBottom: 20 }}>
                             <div style={{ color: "#f87171", fontWeight: 700, fontSize: 14, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                                <XCircle size={16} /> Validation Errors
+                                <XCircle size={16} /> Validation Errors ({currentErrors.length})
                             </div>
                             <ul style={{ margin: 0, paddingLeft: 20, color: "#fca5a5", fontSize: 12 }}>
-                                {data.errors.slice(0, 10).map((err, i) => <li key={i}>{err}</li>)}
-                                {data.errors.length > 10 && <li>...and {data.errors.length - 10} more</li>}
+                                {currentErrors.slice(0, 10).map((err, i) => <li key={i}>{err}</li>)}
+                                {currentErrors.length > 10 && <li>...and {currentErrors.length - 10} more</li>}
                             </ul>
                         </div>
                     )}
@@ -1958,7 +2021,7 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
                                             const shift = emp.shifts[dateStr];
                                             
                                             // Filter shifts by department
-                                            const empDept = departments.find(d => d.name.toUpperCase() === emp.department.toUpperCase());
+                                            const empDept = departments.find(d => d.name.trim().toUpperCase() === emp.department.trim().toUpperCase());
                                             const availableShifts = empDept ? empDept.shifts : shifts;
 
                                             return (
@@ -1999,7 +2062,14 @@ const RosterPreviewModal = ({ data, onClose, onApprove, isUploading, shifts = []
 
                 <ModalFooter>
                     <Button onClick={onClose} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)" }}>Cancel</Button>
-                    <Button onClick={handleApprove} disabled={isUploading}>
+                    <Button 
+                        onClick={handleApprove} 
+                        disabled={isUploading || currentErrors.length > 0}
+                        style={{
+                            opacity: (isUploading || currentErrors.length > 0) ? 0.5 : 1,
+                            cursor: (isUploading || currentErrors.length > 0) ? "not-allowed" : "pointer"
+                        }}
+                    >
                         {isUploading ? "Importing..." : "Approve & Import"}
                     </Button>
                 </ModalFooter>

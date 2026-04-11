@@ -381,7 +381,9 @@ const TopLeftLogout = styled.button`
   }
 `;
 
+
 export default function WebcamCapture({ onResult }) {
+
   const webcamRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [facingMode, setFacingMode] = useState("user");
@@ -526,6 +528,7 @@ export default function WebcamCapture({ onResult }) {
     setFeedbackMessage(null);
   }, []);
 
+
   const captureAndSend = useCallback(async (isAuto = false) => {
     if (isProcessing.current) return;
 
@@ -540,6 +543,8 @@ export default function WebcamCapture({ onResult }) {
     setFeedbackMessage(null); // Clear previous messages
 
     try {
+
+
       const token = localStorage.getItem("access_token");
       const res = await axios.post(
         `${HRbaseurl}mark/`,
@@ -729,6 +734,7 @@ export default function WebcamCapture({ onResult }) {
                 </Row>
 
                 <CameraWrap>
+
                   <WebcamBox>
                     <Webcam
                       ref={webcamRef}
@@ -740,6 +746,7 @@ export default function WebcamCapture({ onResult }) {
                       style={{ width: "100%", height: "100%" }}
                     />
                   </WebcamBox>
+
                   <Overlay />
                   {/* Status Overlay */}
                   {feedbackMessage && (
