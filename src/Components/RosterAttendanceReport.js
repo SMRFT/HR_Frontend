@@ -845,9 +845,9 @@ const RosterAttendanceReport = () => {
             }
             const parts = dateStr.split(':');
             if (parts.length >= 2) {
-                const d = new Date();
-                d.setUTCHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2] || 0));
-                return toIST(d);
+                // If it's just HH:mm:ss, treat it as being in IST
+                const d = new Date(`2000-01-01T${dateStr}+05:30`);
+                if (!isNaN(d.getTime())) return toIST(d);
             }
             return dateStr;
         } catch { return dateStr; }
@@ -898,9 +898,9 @@ const RosterAttendanceReport = () => {
                 }
                 const parts = dateStr.split(':');
                 if (parts.length >= 2) {
-                    const d = new Date();
-                    d.setUTCHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2] || 0));
-                    return toIST24(d);
+                    // Treat as IST time string
+                    const d = new Date(`2000-01-01T${dateStr}+05:30`);
+                    if (!isNaN(d.getTime())) return toIST24(d);
                 }
                 return dateStr;
             } catch { return dateStr; }
@@ -961,6 +961,23 @@ const RosterAttendanceReport = () => {
         window.location.href = url;
     };
 
+    const handleExportSummary = () => {
+        const from_date = ymd(startDate);
+        const to_date = endDate ? ymd(new Date(endDate.getTime() + 86400000)) : ymd(startDate);
+        
+        let url = `${HR_BASE_URL}roster-report/?from_date=${from_date}&to_date=${to_date}&export=summary_xlsx`;
+        
+        const role = localStorage.getItem('role');
+        const dept = localStorage.getItem('department_id');
+        if (role && !['Admin', 'admin'].includes(role) && dept) {
+            url += `&department=${encodeURIComponent(dept)}`;
+        } else if (selectedDepts.length > 0) {
+            url += `&department=${encodeURIComponent(selectedDepts.join(','))}`;
+        }
+        
+        window.location.href = url;
+    };
+
     const toggleDepartment = (deptId) => {
         setSelectedDepts(prev =>
             prev.includes(deptId)
@@ -993,6 +1010,10 @@ const RosterAttendanceReport = () => {
                         <ExportBtn onClick={handleExportDetailed} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
                             <Download size={16} />
                             Detailed XLSX
+                        </ExportBtn>
+                        <ExportBtn onClick={handleExportSummary} style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 6px 20px rgba(59,130,246,0.3)' }}>
+                            <Download size={16} />
+                            Summary (P/A/OFF)
                         </ExportBtn>
                     </div>
 

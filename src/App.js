@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import './App.css';
 import GlobalStyle from './styles/globalStyles';
@@ -89,8 +89,15 @@ function PublicRoute({ children }) {
 }
 
 function App() {
+  React.useEffect(() => {
+    // Clear session data to ensure the app always starts at the login page
+    localStorage.clear();
+  }, []);
+
   return (
-    <Router basename="/HR">
+    // In hr_frontend/src/App.js
+    <Router>
+
       <GlobalStyle />
       <Routes>
         {/* Public Routes */}
