@@ -10,7 +10,9 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    icon: path.join(__dirname, 'logo512.png'),
+    icon: app.isPackaged 
+      ? path.join(__dirname, '../build/logo512.png') 
+      : path.join(__dirname, 'logo512.png'),
     title: "Shanmuga HR"
   });
 

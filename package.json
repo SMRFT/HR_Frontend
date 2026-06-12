@@ -63,5 +63,33 @@
     "electron-builder": "^26.8.1",
     "electron-is-dev": "^3.0.1",
     "wait-on": "^9.0.5"
+  },
+  "build": {
+    "appId": "com.shanmuga.hr",
+    "productName": "Shanmuga HR",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "public/logo512.png"
+    },
+    "win": {
+      "icon": "public/logo512.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "directories": {
+      "buildResources": "public"
+    },
+    "files": [
+      "build/**/*",
+      "node_modules/**/*",
+      "public/electron.js"
+    ],
+    "extraMetadata": {
+      "main": "public/electron.js"
+    }
   }
 }
