@@ -1,0 +1,37 @@
+appId: com.shanmuga.hr
+productName: Shanmuga HR
+directories:
+  output: dist
+  buildResources: public
+files:
+  - build/**/*
+  - public/electron.js
+  - public/preload.js
+  - node_modules/**/*
+  - package.json
+mac:
+  icon: public/logo512.png
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  entitlements: entitlements.mac.plist
+  entitlementsInherit: entitlements.mac.plist
+  target:
+    - dmg
+  category: public.app-category.business
+  extendInfo:
+    NSCameraUsageDescription: "This app needs access to the camera for face recognition and attendance marking."
+    NSMicrophoneUsageDescription: "This app needs access to the microphone."
+win:
+  icon: public/logo512.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+extraMetadata:
+  main: public/electron.js

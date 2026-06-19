@@ -327,6 +327,8 @@ const TableWrapper = styled.div`
 const TableInner = styled.div`
   transform: rotateX(180deg);
   padding: clamp(12px, 2vw, 24px);
+  max-height: 60vh;
+  overflow-y: auto;
 `;
 
 
@@ -355,8 +357,10 @@ const TH = styled.th`
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
-  background: rgba(15,23,42,0.95);
-  backdrop-filter: blur(10px);
+  background: #1e293b;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 
   &.sunday {
     color: var(--danger);
@@ -984,7 +988,7 @@ export default function AttendanceReport() {
       url += `&department=${selectedDepts.join(',')}`;
     }
 
-    window.open(url, '_blank');
+    window.location.href = url;
   };
 
   const handleExportStatus = () => {

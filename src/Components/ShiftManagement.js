@@ -636,10 +636,34 @@ const TableWrapper = styled.div`
   }
 `;
 
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+  border-top-color: #6366f1;
+  animation: spin 0.8s linear infinite;
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px;
+  width: 100%;
+`;
+
 const TableInner = styled.div`
   transform: rotateX(180deg);
   min-width: 1400px;
-  /* Allowing full height instead of restricted 58vh */
+  /* Allowing vertical scrolling inside the table for sticky headers */
+  max-height: 60vh;
+  overflow-y: auto;
   
   &::-webkit-scrollbar {
     width: 5px;
@@ -993,6 +1017,7 @@ const ShiftManagement = () => {
     const [showPreview, setShowPreview] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadFile, setUploadFile] = useState(null);
+    const [isLoadingRoster, setIsLoadingRoster] = useState(false);
 
     const role = localStorage.getItem("role");
     const userDept = localStorage.getItem("department_id");
@@ -1029,6 +1054,7 @@ const ShiftManagement = () => {
     };
 
     const fetchRosterData = async () => {
+        setIsLoadingRoster(true);
         try {
             let empUrl = `${HRbaseurl}employees_from_global/`;
             let rosterUrl = `${HRbaseurl}roster/?from_date=${fromDate}&to_date=${toDate}`;
@@ -1048,17 +1074,21 @@ const ShiftManagement = () => {
             ]);
 
             setEmployees(
-                empRes.data.map((e) => ({
-                    id: e.employeeId,
-                    name: e.employeeName || e.name || e.employeeId,
-                    department: e.department || "Unassigned",
-                    department_id: e.department_id,
-                    image: e.profileImage,
-                }))
+                empRes.data
+                    .filter((e) => e.is_active)
+                    .map((e) => ({
+                        id: e.employeeId,
+                        name: e.employeeName || e.name || e.employeeId,
+                        department: e.department || "Unassigned",
+                        department_id: e.department_id,
+                        image: e.profileImage,
+                    }))
             );
             setRosterData(rosterRes.data);
         } catch (error) {
             console.error("Error fetching roster data", error);
+        } finally {
+            setIsLoadingRoster(false);
         }
     };
 
@@ -1622,27 +1652,29 @@ const ShiftManagement = () => {
                             </div>
                         </RosterActionGroup>
 
-                        {!isRestricted && (
-                            <DeptRow>
-                                <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>Search:</span>
-                                <Input 
-                                    placeholder="Search Employee ID or Name..." 
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    style={{ maxWidth: "250px" }}
-                                />
-                                <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500, marginLeft: 15 }}>Department:</span>
-                                <StyledSelect
-                                    value={selectedDepts[0] || "All"}
-                                    onChange={(e) => setSelectedDepts([e.target.value])}
-                                >
-                                    <option value="All">All Departments</option>
-                                    {uniqueDepartments.filter((d) => d.id !== "All").map((dept) => (
-                                        <option key={dept.id} value={dept.id}>{dept.name}</option>
-                                    ))}
-                                </StyledSelect>
-                            </DeptRow>
-                        )}
+                        <DeptRow>
+                            <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>Search:</span>
+                            <Input 
+                                placeholder="Search Employee ID or Name..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{ maxWidth: "250px" }}
+                            />
+                            {!isRestricted && (
+                                <>
+                                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500, marginLeft: 15 }}>Department:</span>
+                                    <StyledSelect
+                                        value={selectedDepts[0] || "All"}
+                                        onChange={(e) => setSelectedDepts([e.target.value])}
+                                    >
+                                        <option value="All">All Departments</option>
+                                        {uniqueDepartments.filter((d) => d.id !== "All").map((dept) => (
+                                            <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                        ))}
+                                    </StyledSelect>
+                                </>
+                            )}
+                        </DeptRow>
                     </RosterControls>
 
                     {/* Week Selector */}
@@ -1659,6 +1691,11 @@ const ShiftManagement = () => {
                     {/* Roster Table */}
                     <Card>
                         <RosterGrid>
+                            {isLoadingRoster ? (
+                                <LoadingContainer>
+                                    <LoadingSpinner />
+                                </LoadingContainer>
+                            ) : (
                             <TableWrapper>
                                 <TableInner>
                                     <RosterTable>
@@ -1680,8 +1717,9 @@ const ShiftManagement = () => {
                                                         key={day.dateStr}
                                                         style={{
                                                             textAlign: "center", minWidth: 64, padding: "7px 4px",
-                                                            background: day.dayName === "Sun" ? "rgba(239,68,68,0.25)" : "transparent",
+                                                            background: day.dayName === "Sun" ? "#311c21" : "#1e293b",
                                                             borderBottom: day.dayName === "Sun" ? "2px solid #ef4444" : "1px solid rgba(255,255,255,0.05)",
+                                                            zIndex: 20,
                                                         }}
                                                     >
                                                         <div style={{ color: day.dayName === "Sun" ? "#ef4444" : "#94a3b8", fontSize: 10, marginBottom: 2, fontWeight: day.dayName === "Sun" ? 700 : 400 }}>
@@ -1768,6 +1806,7 @@ const ShiftManagement = () => {
                                     </RosterTable>
                                 </TableInner>
                             </TableWrapper>
+                            )}
                         </RosterGrid>
                     </Card>
 

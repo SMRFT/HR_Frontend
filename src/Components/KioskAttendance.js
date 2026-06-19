@@ -532,23 +532,46 @@ export default function WebcamCapture({ onResult }) {
   const captureAndSend = useCallback(async (isAuto = false) => {
     if (isProcessing.current) return;
 
-    const imageSrc = webcamRef.current?.getScreenshot();
-    if (!imageSrc) {
+    const imageSrc1 = webcamRef.current?.getScreenshot();
+    if (!imageSrc1) {
       if (!isAuto) toast.error("Failed to capture image", { autoClose: 2000 });
       return;
     }
 
     isProcessing.current = true;
     if (!isAuto) setLoading(true);
-    setFeedbackMessage(null); // Clear previous messages
+    setFeedbackMessage({ text: "Verifying...", type: 'info' });
 
     try {
-
-
       const token = localStorage.getItem("access_token");
+
+      // Step 1: Fast verify first frame
+      await axios.post(
+        `${HRbaseurl}verify-face/`,
+        { image: imageSrc1 },
+        {
+          headers: {
+            Authorization: `${token}`,
+            "Content-Type": "application/json",
+            "X-Device-Id": deviceId,
+          },
+        }
+      );
+
+      // Step 2: Capture second image for final verification
+      setFeedbackMessage({ text: "Hold still for final verification...", type: 'info' });
+      // Minimal delay to ensure a slightly different frame if needed, but network delay already happened
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const imageSrc2 = webcamRef.current?.getScreenshot();
+      
+      if (!imageSrc2) {
+        throw new Error("Failed to capture second verification frame");
+      }
+
+      // Step 3: Final marking
       const res = await axios.post(
         `${HRbaseurl}mark/`,
-        { image: imageSrc, mode: selectedMode },
+        { image1: imageSrc1, image2: imageSrc2, mode: selectedMode },
         {
           headers: {
             Authorization: `${token}`,
@@ -675,9 +698,9 @@ export default function WebcamCapture({ onResult }) {
                   Your attendance has been recorded
                 </SuccessSubtitle>
 
-                {capturedImage && (
+                {result?.registered_image && (
                   <CapturedImageWrap $mode={result?.mode}>
-                    <img src={capturedImage} alt="Captured attendance" />
+                    <img src={result.registered_image} alt="Registered Employee" />
                   </CapturedImageWrap>
                 )}
 
@@ -755,7 +778,9 @@ export default function WebcamCapture({ onResult }) {
                       bottom: '50%',
                       left: '50%',
                       transform: 'translate(-50%, 50%)',
-                      background: feedbackMessage.type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(16, 185, 129, 0.9)',
+                      background: feedbackMessage.type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 
+                                  feedbackMessage.type === 'info' ? 'rgba(59, 130, 246, 0.9)' : 
+                                  'rgba(16, 185, 129, 0.9)',
                       color: 'white',
                       padding: '12px 24px',
                       borderRadius: '12px',

@@ -162,9 +162,12 @@ const Stat = styled.span`
 
 const TableWrapper = styled.div`
   overflow-x: auto;
+  max-height: 60vh;
+  overflow-y: auto;
   
   &::-webkit-scrollbar {
     height: 8px;
+    width: 8px;
   }
   
   &::-webkit-scrollbar-track {
@@ -196,6 +199,10 @@ const TH = styled.th`
   letter-spacing: 0.5px;
   color: var(--muted);
   border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: #1e293b;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 `;
 
 const TBody = styled.tbody`

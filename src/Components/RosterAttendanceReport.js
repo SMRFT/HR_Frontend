@@ -428,6 +428,9 @@ const TH = styled.th`
   white-space: nowrap;
   background: var(--bg3, #0f172a);
   border-bottom: 1px solid var(--border, rgba(255,255,255,0.1));
+  position: sticky;
+  top: 0;
+  z-index: 20;
 
   &.center { text-align: center; }
   &.weekend { color: var(--warning, #f59e0b); }
@@ -511,6 +514,8 @@ const StatusBadge = styled.div`
   ${({ $status }) => {
         switch ($status) {
             case 'Present':
+            case 'P(UA)':
+            case 'P(W/O)':
                 return css`background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25);`;
             case 'Absent':
                 return css`background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25);`;
@@ -522,7 +527,12 @@ const StatusBadge = styled.div`
             case 'Late In & Early Out':
             case 'Mismatched Punch':
             case 'Single Punch':
+            case 'EG':
                 return css`background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25);`;
+            case 'WF':
+                return css`background: rgba(139,92,246,0.12); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.25);`;
+            case 'UA':
+                return css`background: rgba(219,39,119,0.12); color: #db2777; border: 1px solid rgba(219,39,119,0.25);`;
             default:
                 return css`background: rgba(148,163,184,0.1); color: var(--text-muted); border: 1px solid rgba(148,163,184,0.2);`;
         }
@@ -778,8 +788,8 @@ const RosterAttendanceReport = () => {
                 );
             })
             .sort((a, b) => {
-                const n = (a.employee_name || '').localeCompare(b.employee_name || '');
-                return n !== 0 ? n : new Date(a.date) - new Date(b.date);
+                const cmp = String(a.employee_id || '').localeCompare(String(b.employee_id || ''), undefined, { numeric: true, sensitivity: 'base' });
+                return cmp !== 0 ? cmp : new Date(a.date) - new Date(b.date);
             });
     }, [reportData, searchTerm]);
 
@@ -788,7 +798,7 @@ const RosterAttendanceReport = () => {
         present: filteredData.filter(i => i.status === 'Present').length,
         absent: filteredData.filter(i => i.status === 'Absent').length,
         exceptions: filteredData.filter(i =>
-            ['Late Login', 'Early Checkout', 'Mismatched Punch', 'Single Punch', 'Late In & Early Out'].includes(i.status)
+            ['Late Login', 'Early Checkout', 'Mismatched Punch', 'Single Punch', 'Late In & Early Out', 'EG', 'WF', 'UA'].includes(i.status)
         ).length,
     }), [filteredData]);
 
@@ -807,16 +817,20 @@ const RosterAttendanceReport = () => {
             }
             groups[item.employee_id].records[item.date] = item;
         });
-        return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
+        return Object.values(groups).sort((a, b) => {
+            return String(a.id || '').localeCompare(String(b.id || ''), undefined, { numeric: true, sensitivity: 'base' });
+        });
     }, [filteredData]);
 
     // ── Utilities ───────────────────────────────────────────────────────────────
     const getStatusColor = (status) => {
         if (!status) return null;
-        if (status === 'Present') return '#10b981';
+        if (status === 'Present' || status === 'P(UA)' || status === 'P(W/O)') return '#10b981';
         if (status === 'Absent') return '#ef4444';
+        if (status === 'WF') return '#8b5cf6';
+        if (status === 'UA') return '#db2777';
         if (status.includes('Off') || status.includes('Holiday')) return '#6366f1';
-        if (['Late Login', 'Early Checkout', 'Mismatched Punch', 'Single Punch', 'Late In & Early Out'].includes(status))
+        if (['Late Login', 'Early Checkout', 'Mismatched Punch', 'Single Punch', 'Late In & Early Out', 'EG'].includes(status))
             return '#f59e0b';
         return '#94a3b8';
     };
@@ -826,8 +840,10 @@ const RosterAttendanceReport = () => {
         const map = {
             Present: 'P', Absent: 'A', 'Week Off': 'WO',
             'Week Off/Holiday': 'PH', 'Single Punch': 'SP',
-            'Mismatched Punch': 'SP', 'Late Login': 'LL',
+            'Mismatched Punch': 'SP', 'Late Login': 'P(LL)',
             'Early Checkout': 'EC', 'Late In & Early Out': 'LI/EO',
+            'EG': 'EG', 'WF': 'WF', 'UA': 'UA',
+            'P(UA)': 'P(UA)', 'P(W/O)': 'P(W/O)'
         };
         return map[status] || status;
     };
@@ -845,9 +861,9 @@ const RosterAttendanceReport = () => {
             }
             const parts = dateStr.split(':');
             if (parts.length >= 2) {
-                const d = new Date();
-                d.setUTCHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2] || 0));
-                return toIST(d);
+                // If it's just HH:mm:ss, treat it as being in IST
+                const d = new Date(`2000-01-01T${dateStr}+05:30`);
+                if (!isNaN(d.getTime())) return toIST(d);
             }
             return dateStr;
         } catch { return dateStr; }
@@ -856,10 +872,12 @@ const RosterAttendanceReport = () => {
     // ── Export Logic (unchanged from original) ──────────────────────────────────
     const getHexColor = (status) => {
         if (!status) return '#000000';
-        if (status === 'Present') return '#10b981';
+        if (status === 'Present' || status === 'P(UA)' || status === 'P(W/O)') return '#10b981';
         if (status === 'Absent') return '#ef4444';
+        if (status === 'WF') return '#8b5cf6';
+        if (status === 'UA') return '#db2777';
         if (status.includes('Off') || status.includes('Holiday')) return '#3b82f6';
-        if (['Late Login', 'Early Checkout', 'Mismatched Punch', 'Single Punch', 'Late In & Early Out'].includes(status))
+        if (['Late Login', 'Early Checkout', 'Mismatched Punch', 'Single Punch', 'Late In & Early Out', 'EG'].includes(status))
             return '#f59e0b';
         return '#000000';
     };
@@ -898,9 +916,9 @@ const RosterAttendanceReport = () => {
                 }
                 const parts = dateStr.split(':');
                 if (parts.length >= 2) {
-                    const d = new Date();
-                    d.setUTCHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2] || 0));
-                    return toIST24(d);
+                    // Treat as IST time string
+                    const d = new Date(`2000-01-01T${dateStr}+05:30`);
+                    if (!isNaN(d.getTime())) return toIST24(d);
                 }
                 return dateStr;
             } catch { return dateStr; }
@@ -961,6 +979,23 @@ const RosterAttendanceReport = () => {
         window.location.href = url;
     };
 
+    const handleExportSummary = () => {
+        const from_date = ymd(startDate);
+        const to_date = endDate ? ymd(new Date(endDate.getTime() + 86400000)) : ymd(startDate);
+        
+        let url = `${HR_BASE_URL}roster-report/?from_date=${from_date}&to_date=${to_date}&export=summary_xlsx`;
+        
+        const role = localStorage.getItem('role');
+        const dept = localStorage.getItem('department_id');
+        if (role && !['Admin', 'admin'].includes(role) && dept) {
+            url += `&department=${encodeURIComponent(dept)}`;
+        } else if (selectedDepts.length > 0) {
+            url += `&department=${encodeURIComponent(selectedDepts.join(','))}`;
+        }
+        
+        window.location.href = url;
+    };
+
     const toggleDepartment = (deptId) => {
         setSelectedDepts(prev =>
             prev.includes(deptId)
@@ -993,6 +1028,10 @@ const RosterAttendanceReport = () => {
                         <ExportBtn onClick={handleExportDetailed} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
                             <Download size={16} />
                             Detailed XLSX
+                        </ExportBtn>
+                        <ExportBtn onClick={handleExportSummary} style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 6px 20px rgba(59,130,246,0.3)' }}>
+                            <Download size={16} />
+                            Summary (P/A/OFF)
                         </ExportBtn>
                     </div>
 
@@ -1136,7 +1175,7 @@ const RosterAttendanceReport = () => {
                                     <THead>
                                         <tr>
                                             <TH style={{
-                                                position: 'sticky', left: 0, zIndex: 30,
+                                                position: 'sticky', left: 0, top: 0, zIndex: 40,
                                                 minWidth: 250, background: 'var(--bg3,#0f172a)',
                                                 boxShadow: '4px 0 12px rgba(0,0,0,0.25)'
                                             }}>
@@ -1185,7 +1224,7 @@ const RosterAttendanceReport = () => {
 
                                                     const color = getStatusColor(record.status);
                                                     const hasTimes = ['Present', 'Late Login', 'Early Checkout',
-                                                        'Mismatched Punch', 'Single Punch', 'Late In & Early Out'].includes(record.status);
+                                                        'Mismatched Punch', 'Single Punch', 'Late In & Early Out', 'EG', 'WF', 'UA'].includes(record.status);
 
                                                     return (
                                                         <TD key={dayInfo.day} style={{ padding: 5, verticalAlign: 'top' }}>

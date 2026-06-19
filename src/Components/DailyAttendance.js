@@ -314,6 +314,8 @@ const TableWrapper = styled.div`
 const TableInner = styled.div`
   transform: rotateX(180deg);
   padding: clamp(12px, 2vw, 20px);
+  max-height: 60vh;
+  overflow-y: auto;
 `;
 
 const Table = styled.table`
@@ -330,7 +332,10 @@ const Th = styled.th`
   font-weight: 700;
   text-transform: uppercase;
   border-bottom: 1px solid var(--border);
-  background: rgba(0,0,0,0.2);
+  background: #1e293b;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   cursor: pointer;
   user-select: none;
   
@@ -388,6 +393,12 @@ const StatusTag = styled.span`
     background: rgba(239, 68, 68, 0.15);
     color: #f87171;
     border: 1px solid rgba(239, 68, 68, 0.3);
+  `}
+
+  ${props => props.$status === 'single_punch' && `
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
   `}
 `;
 
@@ -602,6 +613,8 @@ export default function DailyAttendance() {
         // If currently checked in and it's today, show running time from First In
         if (emp.status === 'present' && isToday) {
           endTime = new Date();
+        } else if (emp.firstIn === emp.lastPunch && !isToday) {
+          emp.status = 'single_punch';
         }
 
         // Calculate gross duration: End Time - First In
@@ -934,8 +947,8 @@ export default function DailyAttendance() {
                           </span>
                         </Td>
                         <Td>
-                          <StatusTag $status={emp.status === 'present' ? (isLate ? 'late' : 'ontime') : 'out'}>
-                            {emp.status === 'present' ? 'Working' : 'Checked Out'}
+                          <StatusTag $status={emp.status === 'present' ? (isLate ? 'late' : 'ontime') : (emp.status === 'single_punch' ? 'single_punch' : 'out')}>
+                            {emp.status === 'present' ? 'Working' : (emp.status === 'single_punch' ? 'Single Punch' : 'Checked Out')}
                           </StatusTag>
                         </Td>
                         <Td style={{ fontSize: 13, color: 'var(--muted)' }}>

@@ -477,7 +477,7 @@ const Divider = styled.div`
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 const Login = () => {
-  const [loginMethod, setLoginMethod] = useState("password");
+  const [loginMethod, setLoginMethod] = useState("device");
   const [form, setForm] = useState({ employee_id: "", password: "" });
   const [fingerprint, setFingerprint] = useState("");
   const [showPassword, setShowPassword] = useState(false);

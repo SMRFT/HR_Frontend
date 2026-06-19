@@ -1,6 +1,7 @@
 {
   "name": "hr_frontend",
   "version": "0.1.0",
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.0.1",
@@ -26,11 +27,17 @@
     "styled-components": "^6.1.19",
     "web-vitals": "^2.1.4"
   },
+  "main": "public/electron.js",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "electron:dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:win": "npm run build && electron-builder --win",
+    "package:all": "npm run build && electron-builder --win --mac"
   },
   "eslintConfig": {
     "extends": [
@@ -49,5 +56,40 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^41.2.0",
+    "electron-builder": "^26.8.1",
+    "electron-is-dev": "^3.0.1",
+    "wait-on": "^9.0.5"
+  },
+  "build": {
+    "appId": "com.shanmuga.hr",
+    "productName": "Shanmuga HR",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "public/logo512.png"
+    },
+    "win": {
+      "icon": "public/logo512.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "directories": {
+      "buildResources": "public"
+    },
+    "files": [
+      "build/**/*",
+      "node_modules/**/*",
+      "public/electron.js"
+    ],
+    "extraMetadata": {
+      "main": "public/electron.js"
+    }
   }
 }
