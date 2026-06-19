@@ -698,9 +698,9 @@ export default function WebcamCapture({ onResult }) {
                   Your attendance has been recorded
                 </SuccessSubtitle>
 
-                {capturedImage && (
+                {result?.registered_image && (
                   <CapturedImageWrap $mode={result?.mode}>
-                    <img src={capturedImage} alt="Captured attendance" />
+                    <img src={result.registered_image} alt="Registered Employee" />
                   </CapturedImageWrap>
                 )}
 

@@ -988,7 +988,7 @@ export default function AttendanceReport() {
       url += `&department=${selectedDepts.join(',')}`;
     }
 
-    window.open(url, '_blank');
+    window.location.href = url;
   };
 
   const handleExportStatus = () => {
