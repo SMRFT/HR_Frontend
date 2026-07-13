@@ -35,3 +35,7 @@ nsis:
   allowToChangeInstallationDirectory: true
 extraMetadata:
   main: public/electron.js
+publish:
+  provider: github
+  owner: "SMRFT"
+  repo: "HR_EXE"
