@@ -575,7 +575,7 @@ export default function WebcamCapture({ onResult }) {
         const token = localStorage.getItem("access_token");
         try {
           const verifyRes = await axios.post(`${HRbaseurl}verify-face/`, { image: imageSrc1 }, {
-            headers: { Authorization: `${token}`, "Content-Type": "application/json" }
+            headers: { Authorization: `${token}`, "Content-Type": "application/json", "X-Device-Id": deviceId }
           });
           
           verifiedEmpId.current = verifyRes.data.employee_id;
