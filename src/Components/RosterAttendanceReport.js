@@ -775,6 +775,55 @@ const RosterAttendanceReport = () => {
         fetchReport();
     }, [startDate, endDate, selectedDepts]);
 
+    
+    const calculateShortfall = (shiftTiming, totalHoursStr) => {
+        if (!shiftTiming || shiftTiming === '-' || shiftTiming === 'None') return null;
+        if (!totalHoursStr || totalHoursStr === '-' || totalHoursStr === '0h 0m') return null;
+        
+        // Parse Shift Timing: "09:00 - 18:00"
+        const parts = shiftTiming.split('-');
+        if (parts.length !== 2) return null;
+        
+        const parseTime = (tStr) => {
+            const [h, m] = tStr.trim().split(':').map(Number);
+            return h * 60 + m;
+        };
+        
+        let startMins = parseTime(parts[0]);
+        let endMins = parseTime(parts[1]);
+        if (endMins < startMins) endMins += 24 * 60; // Overnight shift
+        
+        const expectedMins = endMins - startMins;
+        
+        // Parse Actual Hours: "8h 45m"
+        let actualMins = 0;
+        const hMatch = totalHoursStr.match(/(\d+)h/);
+        const mMatch = totalHoursStr.match(/(\d+)m/);
+        if (hMatch) actualMins += parseInt(hMatch[1]) * 60;
+        if (mMatch) actualMins += parseInt(mMatch[1]);
+        
+        const shortfall = expectedMins - actualMins;
+        const gracePeriod = 10;
+        
+        if (shortfall > gracePeriod) {
+            const lateMins = shortfall - gracePeriod;
+            const h = Math.floor(lateMins / 60);
+            const m = lateMins % 60;
+            return `${h > 0 ? h + 'h ' : ''}${m}m late`;
+        }
+        return null;
+    };
+    
+    const getSimpleStatusAbbr = (record) => {
+        if (!record) return '-';
+        const hasIn = record.check_in && record.check_in !== '-' && record.check_in !== 'None';
+        const hasOut = record.check_out && record.check_out !== '-' && record.check_out !== 'None';
+        
+        if (hasIn && hasOut) return 'P';
+        if (!hasIn && !hasOut) return 'A';
+        return 'SP';
+    };
+
     // ── Derived Data ────────────────────────────────────────────────────────────
     const filteredData = useMemo(() => {
         return reportData
@@ -805,6 +854,14 @@ const RosterAttendanceReport = () => {
     const daysInMonth = useMemo(() => {
         return getDaysInRange(startDate, endDate);
     }, [startDate, endDate]);
+
+    
+    const shortfallData = useMemo(() => {
+        return filteredData.map(row => {
+            const lateStr = calculateShortfall(row.shift_timing, row.total_hours);
+            return { ...row, calculated_late: lateStr };
+        }).filter(row => row.calculated_late !== null);
+    }, [filteredData]);
 
     const matrixData = useMemo(() => {
         const groups = {};
@@ -916,7 +973,6 @@ const RosterAttendanceReport = () => {
                 }
                 const parts = dateStr.split(':');
                 if (parts.length >= 2) {
-                    // Treat as IST time string
                     const d = new Date(`2000-01-01T${dateStr}+05:30`);
                     if (!isNaN(d.getTime())) return toIST24(d);
                 }
@@ -946,7 +1002,54 @@ const RosterAttendanceReport = () => {
                 return row;
             });
             downloadExcel(headerRow1, [headerRow2, ...dataRows], `Roster_Matrix_${startDate.toISOString().slice(0, 7)}.xls`);
+        } else if (viewMode === 'simple_matrix') {
+            const headers = ['S.No', 'Employee ID', 'Employee Name', 'Department', 'Designation',
+                ...daysInMonth.map(d => `${dmy(d.date)} ${d.dayName}`)];
+            const dataRows = matrixData.map((emp, idx) => {
+                const row = [idx + 1, emp.id || '', emp.name || '', emp.dept || '', emp.desg || ''];
+                daysInMonth.forEach(dayInfo => {
+                    const record = emp.records[dayInfo.dateStr];
+                    const abbr = getSimpleStatusAbbr(record);
+                    let color = '#000000';
+                    if(abbr === 'P') color = '#10b981';
+                    if(abbr === 'A') color = '#ef4444';
+                    if(abbr === 'SP') color = '#f59e0b';
+                    row.push({ value: abbr, color });
+                });
+                return row;
+            });
+            downloadExcel(headers, dataRows, `Roster_Simple_Matrix_${startDate.toISOString().slice(0, 7)}.xls`);
+        } else if (viewMode === 'shortfall') {
+            const headerRow1 = ['S.No', 'Employee ID', 'Employee Name', 'Department', 'Designation',
+                ...daysInMonth.flatMap(d => [`${dmy(d.date)} ${d.dayName}`, '', '', ''])];
+            const headerRow2 = ['', '', '', '', '', ...daysInMonth.flatMap(() => ['Shift', 'Timings', 'Worked', 'Shortfall'])];
+            
+            const dataRows = matrixData.map((emp, idx) => {
+                const row = [idx + 1, emp.id || '', emp.name || '', emp.dept || '', emp.desg || ''];
+                daysInMonth.forEach(dayInfo => {
+                    const record = emp.records[dayInfo.dateStr];
+                    if (!record) { row.push('-', '-', '-', '-'); return; }
+                    
+                    let lateStr = '-';
+                    const calculated = calculateShortfall(record.shift_timing, record.total_hours);
+                    if (calculated) lateStr = calculated;
+                    
+                    if (lateStr === '-') {
+                        row.push('-', '-', '-', '-');
+                    } else {
+                        row.push(
+                            record.shift_name?.replace('Shift', '') || '-',
+                            record.shift_timing || '-',
+                            record.total_hours || '-',
+                            { value: lateStr, color: '#ef4444' }
+                        );
+                    }
+                });
+                return row;
+            });
+            downloadExcel(headerRow1, [headerRow2, ...dataRows], `Roster_Shortfall_Matrix_${startDate.toISOString().slice(0, 7)}.xls`);
         } else {
+
             const from_date = ymd(startDate);
             const to_date = endDate ? ymd(new Date(endDate.getTime() + 86400000)) : ymd(startDate);
             let url = `${HR_BASE_URL}roster-report/?from_date=${from_date}&to_date=${to_date}&export=flat_xlsx`;
@@ -1023,7 +1126,7 @@ const RosterAttendanceReport = () => {
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <ExportBtn onClick={handleExport}>
                             <Download size={16} />
-                            {viewMode === 'matrix' ? 'Status Matrix' : 'Export List'}
+                            {viewMode === 'matrix' ? 'Export Status Matrix' : viewMode === 'simple_matrix' ? 'Export P/A Matrix' : viewMode === 'shortfall' ? 'Export Shortfall Report' : 'Export List'}
                         </ExportBtn>
                         <ExportBtn onClick={handleExportDetailed} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
                             <Download size={16} />
@@ -1103,8 +1206,14 @@ const RosterAttendanceReport = () => {
                         <ViewBtn $active={viewMode === 'matrix'} onClick={() => setViewMode('matrix')}>
                             <LayoutGrid size={15} /> Matrix
                         </ViewBtn>
+                        <ViewBtn $active={viewMode === 'simple_matrix'} onClick={() => setViewMode('simple_matrix')}>
+                            <LayoutGrid size={15} /> P/A Matrix
+                        </ViewBtn>
                         <ViewBtn $active={viewMode === 'list'} onClick={() => setViewMode('list')}>
                             <List size={15} /> List
+                        </ViewBtn>
+                        <ViewBtn $active={viewMode === 'shortfall'} onClick={() => setViewMode('shortfall')}>
+                            <Clock size={15} /> Shortfall
                         </ViewBtn>
                     </ViewToggle>
 
@@ -1159,17 +1268,15 @@ const RosterAttendanceReport = () => {
                         <TableCardHeader>
                             <TableCardTitle>
                                 {viewMode === 'matrix' ? <LayoutGrid size={16} /> : <List size={16} />}
-                                {viewMode === 'matrix'
-                                    ? `Matrix — ${matrixData.length} Employees`
-                                    : `Detailed List`}
+                                {viewMode === 'matrix' ? `Matrix — ${matrixData.length} Employees` : viewMode === 'simple_matrix' ? `P/A Matrix — ${matrixData.length} Employees` : viewMode === 'shortfall' ? `Shortfall Report` : `Detailed List`}
                             </TableCardTitle>
                             <RecordCount>
-                                {viewMode === 'matrix' ? matrixData.length : filteredData.length} records
+                                {viewMode !== 'list' ? matrixData.length : filteredData.length} records
                             </RecordCount>
                         </TableCardHeader>
 
                         <ScrollShell>
-                            {/* ── MATRIX VIEW ─────────────────────────────────────── */}
+                                                        {/* ── MATRIX VIEW ─────────────────────────────────────── */}
                             {viewMode === 'matrix' ? (
                                 <Table $minWidth={`${250 + daysInMonth.length * 130}px`}>
                                     <THead>
@@ -1251,6 +1358,122 @@ const RosterAttendanceReport = () => {
                                                                     </MatrixTimes>
                                                                 )}
                                                             </MatrixCell>
+                                                        </TD>
+                                                    );
+                                                })}
+                                            </TR>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            ) : viewMode === 'simple_matrix' ? (
+                                /* ── SIMPLE MATRIX VIEW ─────────────────────────────────────── */
+                                <Table $minWidth={`${250 + daysInMonth.length * 60}px`}>
+                                    <THead>
+                                        <tr>
+                                            <TH style={{
+                                                position: 'sticky', left: 0, top: 0, zIndex: 40,
+                                                minWidth: 250, background: 'var(--bg3,#0f172a)',
+                                                boxShadow: '4px 0 12px rgba(0,0,0,0.25)'
+                                            }}>
+                                                Employee
+                                            </TH>
+                                            {daysInMonth.map(d => (
+                                                <TH key={d.day} className={`center${d.isWeekend ? ' weekend' : ''}${d.isSunday ? ' sunday' : ''}`} style={{ minWidth: 60, padding: '10px 4px', fontSize: 11 }}>
+                                                    <div style={{ fontSize: '12px', fontWeight: 700 }}>{d.day}</div>
+                                                </TH>
+                                            ))}
+                                        </tr>
+                                    </THead>
+                                    <tbody>
+                                        {matrixData.map(emp => (
+                                            <TR key={emp.id}>
+                                                <TD style={{ position: 'sticky', left: 0, zIndex: 10, background: 'var(--bg2,#1e293b)', borderRight: '1px solid var(--border,rgba(255,255,255,0.1))', boxShadow: '4px 0 12px rgba(0,0,0,0.15)' }}>
+                                                    <EmployeeCell>
+                                                        <Avatar>{emp.name?.charAt(0) || 'U'}</Avatar>
+                                                        <div>
+                                                            <EmpName>{emp.name}</EmpName>
+                                                            <EmpMeta>
+                                                                <span style={{ color: 'var(--accent,#22d3ee)' }}>{emp.id}</span>
+                                                            </EmpMeta>
+                                                        </div>
+                                                    </EmployeeCell>
+                                                </TD>
+                                                {daysInMonth.map(dayInfo => {
+                                                    const record = emp.records[dayInfo.dateStr];
+                                                    const abbr = getSimpleStatusAbbr(record);
+                                                    let color = '#94a3b8';
+                                                    if(abbr === 'P') color = '#10b981';
+                                                    if(abbr === 'A') color = '#ef4444';
+                                                    if(abbr === 'SP') color = '#f59e0b';
+                                                    return (
+                                                        <TD key={dayInfo.day} style={{ padding: 5, textAlign: 'center', fontSize: '13px', fontWeight: 'bold', color }}>
+                                                            {abbr}
+                                                        </TD>
+                                                    );
+                                                })}
+                                            </TR>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            ) : viewMode === 'shortfall' ? (
+                                /* ── SHORTFALL MATRIX VIEW ─────────────────────────────────────── */
+                                <Table $minWidth={`${250 + daysInMonth.length * 130}px`}>
+                                    <THead>
+                                        <tr>
+                                            <TH style={{
+                                                position: 'sticky', left: 0, top: 0, zIndex: 40,
+                                                minWidth: 250, background: 'var(--bg3,#0f172a)',
+                                                boxShadow: '4px 0 12px rgba(0,0,0,0.25)'
+                                            }}>
+                                                Employee
+                                            </TH>
+                                            {daysInMonth.map(d => (
+                                                <TH key={d.day} className={`center${d.isWeekend ? ' weekend' : ''}${d.isSunday ? ' sunday' : ''}`} style={{ minWidth: 130, padding: '10px 6px', fontSize: 11 }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800 }}>{dmy(d.date)}</div>
+                                                    <div style={{ fontSize: '9px', opacity: 0.7 }}>{d.dayName}</div>
+                                                </TH>
+                                            ))}
+                                        </tr>
+                                    </THead>
+                                    <tbody>
+                                        {matrixData.map(emp => (
+                                            <TR key={emp.id}>
+                                                <TD style={{ position: 'sticky', left: 0, zIndex: 10, background: 'var(--bg2,#1e293b)', borderRight: '1px solid var(--border,rgba(255,255,255,0.1))', boxShadow: '4px 0 12px rgba(0,0,0,0.15)' }}>
+                                                    <EmployeeCell>
+                                                        <Avatar>{emp.name?.charAt(0) || 'U'}</Avatar>
+                                                        <div>
+                                                            <EmpName>{emp.name}</EmpName>
+                                                            <EmpMeta>
+                                                                <span style={{ color: 'var(--accent,#22d3ee)' }}>{emp.id}</span>
+                                                            </EmpMeta>
+                                                        </div>
+                                                    </EmployeeCell>
+                                                </TD>
+                                                {daysInMonth.map(dayInfo => {
+                                                    const record = emp.records[dayInfo.dateStr];
+                                                    let lateStr = '-';
+                                                    if (record) {
+                                                        const calculated = calculateShortfall(record.shift_timing, record.total_hours);
+                                                        if (calculated) lateStr = calculated;
+                                                    }
+                                                    return (
+                                                        <TD key={dayInfo.day} style={{ padding: 5, verticalAlign: 'top' }}>
+                                                            {record && lateStr !== '-' ? (
+                                                                <MatrixCell $color={'#ef4444'}>
+                                                                    <MatrixShift style={{ color: 'var(--text)' }}>{record.shift_name?.replace('Shift', '') || '–'}</MatrixShift>
+                                                                    <MatrixMeta>{record.shift_timing || ''}</MatrixMeta>
+                                                                    {record.total_hours && record.total_hours !== '-' && record.total_hours !== '0h 0m' && (
+                                                                        <MatrixTimes $color={'#ef4444'} style={{ marginTop: '4px' }}>
+                                                                            <MatrixTotal style={{ color: '#10b981', marginBottom: '2px' }}>Worked: {record.total_hours}</MatrixTotal>
+                                                                            <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444', textAlign: 'center' }}>
+                                                                                {lateStr}
+                                                                            </div>
+                                                                        </MatrixTimes>
+                                                                    )}
+                                                                </MatrixCell>
+                                                            ) : (
+                                                                <div style={{ textAlign: 'center', fontSize: 14, paddingTop: 14, opacity: 0.3 }}>–</div>
+                                                            )}
                                                         </TD>
                                                     );
                                                 })}

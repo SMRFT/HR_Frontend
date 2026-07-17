@@ -238,6 +238,32 @@ const SuccessScreen = styled.div`
   overflow-y: auto;
 `;
 
+
+const ErrorModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+`;
+
+const ErrorModalCard = styled.div`
+  background: var(--bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 30px;
+  border-radius: 16px;
+  max-width: 400px;
+  text-align: center;
+  color: var(--text);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  
+  h3 { color: var(--danger); margin-top: 0; margin-bottom: 15px; }
+  p { color: var(--muted); margin-bottom: 25px; line-height: 1.5; }
+`;
+
 const SuccessIcon = styled.div`
   width: clamp(60px, 10vw, 70px);
   height: clamp(60px, 10vw, 70px);
@@ -396,6 +422,14 @@ export default function WebcamCapture({ onResult }) {
   const HRbaseurl = process.env.REACT_APP_BACKEND_HR_BASE_URL;
   const navigate = useNavigate();
 
+  
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const verifyRetries = useRef(0);
+  const markRetries = useRef(0);
+  const verifiedEmpId = useRef(null);
+  const processState = useRef('IDLE'); // IDLE, VERIFYING, MARKING
+  const abortController = useRef(null);
+
   const [isAutoCapture, setIsAutoCapture] = useState(true);
   const isProcessing = useRef(false);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
@@ -500,16 +534,156 @@ export default function WebcamCapture({ onResult }) {
     }
   }, [showSuccess, countdown]);
 
-  // Auto-capture interval
-  useEffect(() => {
-    let interval;
-    if (showCamera && isAutoCapture && !loading && !showSuccess) {
-      interval = setInterval(() => {
-        captureAndSend(true);
-      }, 1500);
+  // Auto-capture State Machine
+  const runProcessLoop = useCallback(async (isAuto = true) => {
+    if (!showCamera || showSuccess || showErrorModal) return;
+    if (isProcessing.current) return;
+    isProcessing.current = true;
+
+    // Helper to pause
+    const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+    try {
+      if (processState.current === 'IDLE' || processState.current === 'VERIFYING') {
+        processState.current = 'VERIFYING';
+        
+        // Wait based on retry count
+        if (verifyRetries.current === 1) await delay(1000);
+        else if (verifyRetries.current === 2) await delay(2000);
+        else if (verifyRetries.current >= 3) {
+          setShowErrorModal(true);
+          isProcessing.current = false;
+          return;
+        }
+
+        if (!showCamera || showSuccess || showErrorModal) {
+            isProcessing.current = false;
+            return;
+        }
+
+        const imageSrc1 = webcamRef.current?.getScreenshot();
+        if (!imageSrc1) {
+          if (!isAuto) toast.error("Failed to capture image", { autoClose: 2000 });
+          isProcessing.current = false;
+          if (isAuto) setTimeout(() => runProcessLoop(true), 500);
+          return;
+        }
+
+        if (!isAuto) setLoading(true);
+        setFeedbackMessage({ text: "Verifying...", type: 'info' });
+
+        const token = localStorage.getItem("access_token");
+        try {
+          const verifyRes = await axios.post(`${HRbaseurl}verify-face/`, { image: imageSrc1 }, {
+            headers: { Authorization: `${token}`, "Content-Type": "application/json", "X-Device-Id": deviceId }
+          });
+          
+          verifiedEmpId.current = verifyRes.data.employee_id;
+          verifyRetries.current = 0;
+          processState.current = 'MARKING';
+          
+          isProcessing.current = false;
+          if (isAuto) runProcessLoop(true);
+          
+        } catch (err) {
+          verifyRetries.current++;
+          const errorMsg = err?.response?.data?.error || "Verification failed";
+          
+          const isSpoof = errorMsg.includes("Spoofing");
+          if (isSpoof || !isAuto) {
+              setFeedbackMessage({ text: errorMsg, type: 'error' });
+              if (isSpoof) {
+                  playErrorSound();
+                  toast.error(errorMsg, { position: "top-center", autoClose: 4000, toastId: 'spoofing-alert' });
+              }
+          }
+          
+          isProcessing.current = false;
+          setLoading(false);
+          if (isAuto) runProcessLoop(true);
+        }
+
+      } else if (processState.current === 'MARKING') {
+        
+        if (markRetries.current === 1) await delay(1000);
+        else if (markRetries.current === 2) await delay(2000);
+        else if (markRetries.current >= 3) {
+          setShowErrorModal(true);
+          isProcessing.current = false;
+          return;
+        }
+
+        if (!showCamera || showSuccess || showErrorModal) {
+            isProcessing.current = false;
+            return;
+        }
+
+        const imageSrc2 = webcamRef.current?.getScreenshot();
+        if (!imageSrc2) {
+          isProcessing.current = false;
+          if (isAuto) setTimeout(() => runProcessLoop(true), 500);
+          return;
+        }
+
+        setFeedbackMessage({ text: "Marking Attendance...", type: 'info' });
+        const token = localStorage.getItem("access_token");
+        
+        try {
+          const markRes = await axios.post(`${HRbaseurl}mark/`, { 
+            image: imageSrc2, 
+            mode: selectedMode,
+            verifiedEmployeeID: verifiedEmpId.current
+          }, {
+            headers: { Authorization: `${token}`, "Content-Type": "application/json", "X-Device-Id": deviceId }
+          });
+
+          setResult(markRes.data);
+          setShowSuccess(true);
+          playSuccessSound();
+          setShowCamera(false);
+          toast.success(`${selectedMode === "IN" ? "Checked In" : "Checked Out"} Successfully!`, { position: "top-center", autoClose: 2000 });
+          onResult && onResult(markRes.data);
+          
+          // Reset state for next time
+          processState.current = 'IDLE';
+          verifyRetries.current = 0;
+          markRetries.current = 0;
+          verifiedEmpId.current = null;
+          isProcessing.current = false;
+
+        } catch (err) {
+          markRetries.current++;
+          const errorMsg = err?.response?.data?.error || "Attendance marking failed";
+          
+          setFeedbackMessage({ text: errorMsg, type: 'error' });
+          if (errorMsg.includes("Spoofing")) {
+              playErrorSound();
+              toast.error(errorMsg, { position: "top-center", autoClose: 4000, toastId: 'spoofing-alert' });
+          } else if (!isAuto) {
+              toast.error(errorMsg, { position: "top-center", autoClose: 2000, toastId: 'auto-status-toast' });
+          }
+
+          // Fallback to Step 1
+          verifiedEmpId.current = null;
+          processState.current = 'VERIFYING';
+          
+          isProcessing.current = false;
+          setLoading(false);
+          if (isAuto) runProcessLoop(true);
+        }
+      }
+    } catch (e) {
+      isProcessing.current = false;
+      setLoading(false);
     }
-    return () => clearInterval(interval);
-  }, [showCamera, isAutoCapture, loading, showSuccess]);
+  }, [showCamera, showSuccess, showErrorModal, HRbaseurl, selectedMode, deviceId, playSuccessSound, playErrorSound, onResult]);
+
+  useEffect(() => {
+    if (showCamera && isAutoCapture && !loading && !showSuccess && !showErrorModal) {
+       runProcessLoop(true);
+    }
+  }, [showCamera, isAutoCapture, loading, showSuccess, showErrorModal, runProcessLoop]);
+
 
   const handleModeSelection = useCallback((mode) => {
     setSelectedMode(mode);
@@ -517,131 +691,24 @@ export default function WebcamCapture({ onResult }) {
     setShowSuccess(false);
   }, []);
 
-  const handleReset = useCallback(() => {
+    const handleReset = useCallback(() => {
     setShowCamera(false);
     setShowSuccess(false);
+    setShowErrorModal(false);
     setSelectedMode(null);
-    setResult(null);
     setResult(null);
     setCapturedImage(null);
     setCountdown(2);
     setFeedbackMessage(null);
+    verifyRetries.current = 0;
+    markRetries.current = 0;
+    verifiedEmpId.current = null;
+    processState.current = 'IDLE';
+    isProcessing.current = false;
   }, []);
 
 
-  const captureAndSend = useCallback(async (isAuto = false) => {
-    if (isProcessing.current) return;
-
-    const imageSrc1 = webcamRef.current?.getScreenshot();
-    if (!imageSrc1) {
-      if (!isAuto) toast.error("Failed to capture image", { autoClose: 2000 });
-      return;
-    }
-
-    isProcessing.current = true;
-    if (!isAuto) setLoading(true);
-    setFeedbackMessage({ text: "Verifying...", type: 'info' });
-
-    try {
-      const token = localStorage.getItem("access_token");
-
-      // Step 1: Fast verify first frame
-      await axios.post(
-        `${HRbaseurl}verify-face/`,
-        { image: imageSrc1 },
-        {
-          headers: {
-            Authorization: `${token}`,
-            "Content-Type": "application/json",
-            "X-Device-Id": deviceId,
-          },
-        }
-      );
-
-      // Step 2: Capture second image for final verification
-      setFeedbackMessage({ text: "Hold still for final verification...", type: 'info' });
-      // Minimal delay to ensure a slightly different frame if needed, but network delay already happened
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const imageSrc2 = webcamRef.current?.getScreenshot();
-      
-      if (!imageSrc2) {
-        throw new Error("Failed to capture second verification frame");
-      }
-
-      // Step 3: Final marking
-      const res = await axios.post(
-        `${HRbaseurl}mark/`,
-        { image1: imageSrc1, image2: imageSrc2, mode: selectedMode },
-        {
-          headers: {
-            Authorization: `${token}`,
-            "Content-Type": "application/json",
-            "X-Device-Id": deviceId,
-          },
-        }
-      );
-      setResult(res.data);
-      setShowSuccess(true);
-
-      // Play success sound
-      playSuccessSound();
-
-      setShowCamera(false);
-
-      // Success toast
-      toast.success(
-        `${selectedMode === "IN" ? "Checked In" : "Checked Out"} Successfully!`,
-        { position: "top-center", autoClose: 2000 }
-      );
-
-      onResult && onResult(res.data);
-    } catch (err) {
-      console.error(err);
-
-      const errorMsg = err?.response?.data?.error || "Attendance marking failed";
-
-      // Determine if we should show this error
-      // Show Spoofing and User Not Found even in auto mode
-      const isSpoof = errorMsg.includes("Spoofing");
-      const isNotFound = errorMsg.includes("User Not Found");
-      const shouldShow = !isAuto || isSpoof || isNotFound;
-
-      if (shouldShow) {
-        // Show on-camera feedback
-        setFeedbackMessage({ text: errorMsg, type: 'error' });
-
-        // TOAST LOGIC:
-        // 1. Spoofing: Critical, showing it separately so it isn't overwritten by "User Not Found"
-        if (isSpoof) {
-          playErrorSound(); // 🔊 Play error sound for spoofing
-          toast.error(errorMsg, {
-            position: "top-center",
-            autoClose: 4000,
-            toastId: 'spoofing-alert' // Unique ID for spoofing
-          });
-        }
-        // 2. User Not Found / Other Auto errors: Throttled using a fixed ID
-        else {
-          toast.error(errorMsg, {
-            position: "top-center",
-            autoClose: 2000,
-            toastId: 'auto-status-toast' // Constant ID prevents stacking
-          });
-        }
-      }
-
-      setCapturedImage(null);
-    } finally {
-      setLoading(false);
-      isProcessing.current = false;
-      // Clear feedback after 2s if it's an error
-      if (feedbackMessage?.type === 'error') {
-        setTimeout(() => setFeedbackMessage(null), 2000);
-      }
-    }
-  }, [selectedMode, onResult, HRbaseurl, playSuccessSound, playErrorSound]);
-
-  const fmtTimestamp = (iso) => {
+    const fmtTimestamp = (iso) => {
     if (!iso) return "-";
     try {
       return new Date(iso).toLocaleString('en-US', {
@@ -662,6 +729,18 @@ export default function WebcamCapture({ onResult }) {
   return (
     <>
       <ToastContainer />
+      {showErrorModal && (
+        <ErrorModalOverlay>
+          <ErrorModalCard>
+            <h3>Verification Failed</h3>
+            <p>We could not verify your face. Please ensure proper lighting, look straight at the camera, and remove any masks or sunglasses.</p>
+            <Button onClick={handleReset} style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.25), rgba(248,113,113,0.28))', borderColor: 'rgba(239,68,68,0.4)' }}>
+              OK
+            </Button>
+          </ErrorModalCard>
+        </ErrorModalOverlay>
+      )}
+
       <TopLeftLogout onClick={handleLogout} title="Exit / Admin Login">
         <LogOut size={18} />
       </TopLeftLogout>
@@ -827,7 +906,7 @@ export default function WebcamCapture({ onResult }) {
                 </Row>
 
                 <Controls>
-                  <Button onClick={() => captureAndSend(false)} disabled={loading}>
+                  <Button onClick={() => runProcessLoop(false)} disabled={loading}>
                     {loading ? "Processing..." : `Capture & Submit`}
                   </Button>
                 </Controls>

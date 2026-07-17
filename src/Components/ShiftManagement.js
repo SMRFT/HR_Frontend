@@ -636,28 +636,6 @@ const TableWrapper = styled.div`
   }
 `;
 
-const LoadingSpinner = styled.div`
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255,255,255,0.1);
-  border-radius: 50%;
-  border-top-color: #6366f1;
-  animation: spin 0.8s linear infinite;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 80px;
-  width: 100%;
-`;
-
 const TableInner = styled.div`
   transform: rotateX(180deg);
   min-width: 1400px;
@@ -1017,7 +995,6 @@ const ShiftManagement = () => {
     const [showPreview, setShowPreview] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadFile, setUploadFile] = useState(null);
-    const [isLoadingRoster, setIsLoadingRoster] = useState(false);
 
     const role = localStorage.getItem("role");
     const userDept = localStorage.getItem("department_id");
@@ -1054,7 +1031,6 @@ const ShiftManagement = () => {
     };
 
     const fetchRosterData = async () => {
-        setIsLoadingRoster(true);
         try {
             let empUrl = `${HRbaseurl}employees_from_global/`;
             let rosterUrl = `${HRbaseurl}roster/?from_date=${fromDate}&to_date=${toDate}`;
@@ -1087,8 +1063,6 @@ const ShiftManagement = () => {
             setRosterData(rosterRes.data);
         } catch (error) {
             console.error("Error fetching roster data", error);
-        } finally {
-            setIsLoadingRoster(false);
         }
     };
 
@@ -1691,11 +1665,6 @@ const ShiftManagement = () => {
                     {/* Roster Table */}
                     <Card>
                         <RosterGrid>
-                            {isLoadingRoster ? (
-                                <LoadingContainer>
-                                    <LoadingSpinner />
-                                </LoadingContainer>
-                            ) : (
                             <TableWrapper>
                                 <TableInner>
                                     <RosterTable>
@@ -1806,7 +1775,6 @@ const ShiftManagement = () => {
                                     </RosterTable>
                                 </TableInner>
                             </TableWrapper>
-                            )}
                         </RosterGrid>
                     </Card>
 

@@ -160,9 +160,8 @@ function App() {
         } />
 
         <Route path="/spoofing-attempts" element={
-          <ProtectedLayout>
-            <SpoofingReports />
-          </ProtectedLayout>
+          <SpoofingReports />
+
         } />
 
 
